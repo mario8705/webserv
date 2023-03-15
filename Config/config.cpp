@@ -1,8 +1,21 @@
+#include "config.hpp"
 
-#include <iostream>
-#include <fstream>
-#include <string>
-int getconfig(void)
+config::config(std::string content) : _stringconfig(content)
+{
+    std::cout << "Gameson\n";
+    std::cout << getStringConfig() << std::endl;
+}
+
+config::~config() {
+    std::cout << "destructor\n";
+}
+
+std::string config::getStringConfig() {return(_stringconfig);}
+/*
+    Récupère le fichier de config (config.conf), vérifie s'il existe bien.
+    Renvois ledit document sous forme de string.
+ */
+std::string getconfigfile(void)
 {
     std::string filename = "../config.conf";
     std::ifstream file(filename.c_str());
@@ -16,18 +29,21 @@ int getconfig(void)
             content += '\n';
         }
         file.close();
-        std::cout  << filename << " : \n" << content << std::endl;
     }
     else
-    {
-        std::cerr << "Error  cannot open config file\n";
-        return 1;
-    }
-    return 0;
+        throw(config::InvalidConfigFile());
+    return(content);
 }
 
 int main()
 {
-    getconfig();
+    try{
+        std::string tmp_conf = getconfigfile();
+        config conf(tmp_conf);
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
     return(0);
 }
