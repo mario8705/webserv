@@ -7,15 +7,14 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include "IOEvent.h"
+#include <vector>
 
 SelectEventLoop::SelectEventLoop()
 {
-
 }
 
 SelectEventLoop::~SelectEventLoop()
 {
-
 }
 
 void SelectEventLoop::RegisterEvent(IIOEvent *evt)
@@ -33,7 +32,14 @@ void SelectEventLoop::RegisterEvent(IIOEvent *evt)
 
 void SelectEventLoop::UnregisterEvent(IIOEvent *evt)
 {
-    /* TODO */
+    tEventMap::iterator it;
+
+    it = m_eventMap.find(evt->GetFileDescriptor());
+    if (it != m_eventMap.end())
+    {
+        printf("UnregisterEvent(%p)\n", evt);
+        m_eventMap.erase(it);
+    }
 }
 
 void SelectEventLoop::Run()
@@ -43,12 +49,17 @@ void SelectEventLoop::Run()
     int fd;
     int nfds;
     int n;
-    tEventMap::iterator  it;
+    tEventMap::iterator it;
+    std::vector<IIOEvent *> readEvents;
+    std::vector<IIOEvent *> writeEvents;
+    size_t i;
 
     while (1)
     {
         FD_ZERO(&rdset);
         FD_ZERO(&wrset);
+        readEvents.clear();
+        writeEvents.clear();
 
         nfds = 0;
         for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
@@ -72,9 +83,13 @@ void SelectEventLoop::Run()
             fd = it->first;
             evt = it->second;
             if (FD_ISSET(fd, &rdset))
-                evt->HandleReadEvent();
+                readEvents.push_back(evt);
             if (FD_ISSET(fd, &wrset))
-                evt->HandleWriteEvent();
+                writeEvents.push_back(evt);
         }
+        for (i = 0; i < readEvents.size(); ++i)
+            readEvents[i]->HandleReadEvent();
+        for (i = 0; i < writeEvents.size(); ++i)
+            writeEvents[i]->HandleWriteEvent();
     }
 }
