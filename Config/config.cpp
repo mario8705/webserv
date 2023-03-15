@@ -35,11 +35,31 @@ std::string getconfigfile(void)
     return(content);
 }
 
+std::vector<std::string> tokenize(std::string const& str)
+{
+    std::vector<std::string> tokens;
+    std::stringstream ss(str); // Créer un stringstream à partir de la chaîne de caractères
+
+    std::string token;
+    while (std::getline(ss, token, ' ')) // Parcourir chaque mot séparé par un espace
+    {
+        if (token.size() != 0 )
+            tokens.push_back(token); // Ajouter le mot au vecteur de tokens
+    }
+    return tokens;
+}
+
 int main()
 {
     try{
         std::string tmp_conf = getconfigfile();
         config conf(tmp_conf);
+        std::vector<std::string> tokens_vector = tokenize(tmp_conf);
+        for (size_t i = 0; i < tokens_vector.size(); i++)
+        {
+            //if (tokens_vector[i].find("\n") != std::string::npos && tokens_vector[i + 1].find("\n") != std::string::npos)
+                std::cout << tokens_vector[i] << std::endl;
+        }
     }
     catch (std::exception &e)
     {
