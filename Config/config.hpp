@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
+#include <cstring>
 
 
 class config {
@@ -14,7 +16,9 @@ public :
     config(std::string content);
     ~config();
     //void &operator=(const config &new);
-    std::map<std::string, std::string> configtomap(std::string config);
+    std::vector<std::string> makeServ(std::string conf);
+    std::map<std::string, std::string> configtomapstring(std::string conf);
+
     std::string getStringConfig();
 
     class InvalidConfigFile : public std::exception {
@@ -23,10 +27,16 @@ public :
     };
 
 private:
-    config();
     std::string _stringconfig;
     std::map<std::string, std::string> _mapconfig;
+};
 
+class server {
+public:
+    server(std::string content);
+    ~server();
+    std::string getStringConfig();
 
-
+private:
+    std::string _stringconfig;
 };

@@ -2,15 +2,46 @@
 
 config::config(std::string content) : _stringconfig(content)
 {
-    std::cout << "Gameson\n";
-    std::cout << getStringConfig() << std::endl;
+    std::cout << "config on\n";
+}
+
+server::server(std::string content) : _stringconfig(content)
+{
+    std::cout << "server creation\n";
 }
 
 config::~config() {
-    std::cout << "destructor\n";
+    std::cout << "config destructor\n";
+}
+
+server::~server() {
+    //std::cout << "server destructor\n";
 }
 
 std::string config::getStringConfig() {return(_stringconfig);}
+std::string server::getStringConfig() {return(_stringconfig);}
+
+
+std::vector<std::string> config::makeServ(std::string conf)
+{
+    std::vector<std::string> servers;
+    size_t pos = conf.find("server {");
+    size_t pos_next;
+    while (pos != std::string::npos)
+    {
+        pos_next = conf.find("server {", pos + 1);
+        if (pos_next == std::string::npos)
+        {
+            servers.push_back(conf.substr(pos));
+        }
+        else
+        {
+            servers.push_back(conf.substr(pos, pos_next - pos));
+        }
+        pos = pos_next;
+    }
+    return servers;
+}
 /*
     Récupère le fichier de config (config.conf), vérifie s'il existe bien.
     Renvois ledit document sous forme de string.
@@ -23,11 +54,12 @@ std::string getconfigfile(void)
 
     if (file.good())
     {
+        int it;
         std::string line;
-        while (std::getline(file, line)) {
+        while (std::getline(file, line, '\n')) {
             content += line;
-            content += '\n';
         }
+
         file.close();
     }
     else
@@ -35,31 +67,30 @@ std::string getconfigfile(void)
     return(content);
 }
 
-std::vector<std::string> tokenize(std::string const& str)
+/*std::map <std::string, std::string> config::configtomapstring(std::string conf)
 {
-    std::vector<std::string> tokens;
-    std::stringstream ss(str); // Créer un stringstream à partir de la chaîne de caractères
+    std::stringstream ss(conf);
 
-    std::string token;
-    while (std::getline(ss, token, ' ')) // Parcourir chaque mot séparé par un espace
-    {
-        if (token.size() != 0 )
-            tokens.push_back(token); // Ajouter le mot au vecteur de tokens
-    }
-    return tokens;
-}
+}*/
+
 
 int main()
 {
     try{
+        std::vector<std::string> splited_serv;
         std::string tmp_conf = getconfigfile();
         config conf(tmp_conf);
-        std::vector<std::string> tokens_vector = tokenize(tmp_conf);
-        for (size_t i = 0; i < tokens_vector.size(); i++)
+        splited_serv = conf.makeServ(tmp_conf);
+        std::vector<server> servers;
+        for (size_t i = 0; i < splited_serv.size(); i++)
         {
-            //if (tokens_vector[i].find("\n") != std::string::npos && tokens_vector[i + 1].find("\n") != std::string::npos)
-                std::cout << tokens_vector[i] << std::endl;
+            servers.push_back(splited_serv[i]);
         }
+          std::cout << servers[0].getStringConfig() << std::endl;
+          std::cout << servers[1].getStringConfig() << std::endl;
+          std::cout << servers[2].getStringConfig() << std::endl;
+
+
     }
     catch (std::exception &e)
     {
