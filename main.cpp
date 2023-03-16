@@ -12,93 +12,7 @@
 #include "ListenerEvent.h"
 #include "ConnectionHandler.h"
 #include "DataBuffer.h"
-
-class BufferShard
-{
-public:
-   /* BufferShard(int fd)
-        : m_fd(fd)
-    {
-        m_buffer = NULL;
-        m_capacity = 0;
-        m_readPos = 0;
-        m_writePos = 0;
-    }*/
-
-    BufferShard(size_t capacity)
-        : m_capacity(capacity)
-    {
-        m_buffer = new char[capacity];
-        m_writePos = 0;
-        m_readPos = 0;
-    }
-
-    ~BufferShard()
-    {
-        if (m_fd >= 0)
-            close(m_fd);
-        if (m_buffer)
-            delete[] m_buffer;
-    }
-
-    int Write(const void *data, size_t n)
-    {
-        size_t space;
-
-        space = GetAvailableSpace();
-        printf("Space: %lu\n", space);
-        if (n > space)
-            n = space;
-        if (n > 0) {
-            std::memcpy(m_buffer + m_writePos, data, n);
-            m_writePos += n;
-            if (m_writePos == m_capacity)
-                m_writePos = 0;
-        }
-        return n;
-    }
-
-    bool IsEmpty() const
-    {
-        return m_readPos == m_writePos;
-    }
-
-    bool IsFull() const
-    {
-        return ((m_writePos + 1) % m_capacity) == m_readPos;
-    }
-
-    int GetAvailableSpace() const
-    {
-        if (m_readPos <= m_writePos)
-            return m_capacity - m_writePos;
-        return m_readPos - m_writePos;
-    }
-
-    int m_fd;
-    char *m_buffer;
-    size_t m_capacity;
-    size_t m_readPos;
-    size_t m_writePos;
-};
-
-class OutputBuffer
-{
-public:
-
-    int GetLength() const
-    {
-        return 0;
-    }
-
-    int Write(const void *data, size_t n)
-    {
-        return 0;
-    }
-
-private:
-    std::vector<BufferShard *> m_shards;
-};
+#include "FileEvent.h"
 
 class ServerHost;
 
@@ -116,7 +30,8 @@ public:
 protected:
     ServerHost *m_host;
     DataBuffer *m_receiveBuffer;
-    std::string m_outputBuffer;
+    DataBuffer *m_outputBuffer;
+    FileEvent *m_fileEvent;
 };
 
 int fd_set_non_blocking(int fd);
@@ -162,6 +77,8 @@ public:
         }
     }
 
+    IEventLoop *GetEventLoop() const { return m_eventLoop; }
+
 private:
     IEventLoop *m_eventLoop;
     std::vector<SocketEvent *> m_events;
@@ -170,13 +87,18 @@ private:
 SocketEvent::SocketEvent(ServerHost *host, int fd)
     : IOEventBase(fd), m_host(host)
 {
-    m_receiveBuffer = new DataBuffer(16384);
+    m_receiveBuffer = new DataBuffer();
+    m_outputBuffer = new DataBuffer();
+    m_fileEvent = NULL;
 }
 
 SocketEvent::~SocketEvent()
 {
+    if (m_fileEvent)
+        delete m_fileEvent;
     delete m_receiveBuffer;
-    close(m_fd);
+    delete m_outputBuffer;
+    ::close(m_fd);
 }
 
 void SocketEvent::HandleReadEvent()
@@ -187,39 +109,48 @@ void SocketEvent::HandleReadEvent()
     n = m_receiveBuffer->Receive(m_fd);
     if (n <= 0)
     {
+        printf("recv() <= 0\n");
         m_host->Disconnect(this);
     }
     else
     {
-        while (m_receiveBuffer->GetLine(line))
+        while (m_receiveBuffer->Readln(line))
+        {
+            if (line.empty())
+            {
+                int fd;
+
+                fd = open("index.html", O_RDONLY | O_NONBLOCK);
+                perror("open");
+                m_fileEvent = new FileEvent(m_host->GetEventLoop(), fd);
+
+                char s[] = "HTTP/1.1 200 Ok\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n";
+                m_outputBuffer->Write(s, sizeof(s));
+            }
+            printf("Got a line: %s\n", line.c_str());
+        }
+       /* while (m_receiveBuffer->GetLine(line))
         {
             printf("Line: %s (%d)\n", line.c_str(), line.size());
             if (line.empty())
             {
                 m_outputBuffer = "HTTP/1.1 200 Ok\r\nContent-Type: text/html\r\n\r\nHello, World !";
             }
-        }
+        }*/
     }
 }
 
-void SocketEvent::HandleWriteEvent()
-{
-    ssize_t n;
-
-    n = send(m_fd, m_outputBuffer.c_str(), m_outputBuffer.size(), 0);
-    if (n < 0)
-    {
-        m_host->Disconnect(this);
+void SocketEvent::HandleWriteEvent() {
+    if (m_fileEvent) {
+        m_fileEvent->WriteToBuffer(m_outputBuffer);
     }
-    else
-    {
-        m_outputBuffer.erase(0, n);
-    }
+    m_outputBuffer->Send(m_fd);
 }
 
 bool SocketEvent::IsWritable() const
 {
-    return m_outputBuffer.size() > 0;
+    return m_outputBuffer->GetLength() > 0 ||
+        (m_fileEvent && m_fileEvent->HasDataAvailable());
 }
 
 int main(int argc, char *argv[])
@@ -236,23 +167,22 @@ int main(int argc, char *argv[])
 
     opt.Parse(argc, argv);
 
-    struct sockaddr_in sin;
+    std::vector<ListenerEvent *> listeners;
 
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(8080);
-    sin.sin_addr.s_addr = INADDR_ANY;
+    struct sockaddr_in sin;
 
     ServerHost *serverHost = new ServerHost(&eventLoop);
 
-    ListenerEvent *serv = ListenerEvent::CreateAndBind(serverHost, (struct sockaddr *) &sin, sizeof(sin), 10);
-    eventLoop.RegisterEvent(serv);
+    for (int i = 0; i < 10; ++i) {
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons(8080 + i);
+        sin.sin_addr.s_addr = INADDR_ANY;
 
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(8082);
-    sin.sin_addr.s_addr = INADDR_ANY;
+        ListenerEvent *serv = ListenerEvent::CreateAndBind(serverHost, (struct sockaddr *) &sin, sizeof(sin), 10);
+        eventLoop.RegisterEvent(serv);
 
-    serv = ListenerEvent::CreateAndBind(serverHost, (struct sockaddr *) &sin, sizeof(sin), 10);
-    eventLoop.RegisterEvent(serv);
+        listeners.push_back(serv);
+    }
 
     eventLoop.Run();
     return 0;

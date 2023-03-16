@@ -3,108 +3,285 @@
 //
 
 #include "DataBuffer.h"
+#include <cstdlib>
+#include <unistd.h>
 #include <sys/socket.h>
+#include "BufferChain.h"
 
-DataBuffer::DataBuffer(size_t capacity)
-        : m_capacity(capacity)
+DataBuffer::DataBuffer()
 {
-    m_buffer = new char[capacity];
-    m_readPos = 0;
-    m_writePos = 0;
+    m_length = 0;
 }
 
 DataBuffer::~DataBuffer()
 {
-    delete[] m_buffer;
+    tChainList::iterator it;
+
+    for (it = m_chains.begin(); it != m_chains.end(); ++it)
+    {
+        delete *it;
+    }
+    for (it = m_freeChains.begin(); it != m_freeChains.end(); ++it)
+    {
+        delete *it;
+    }
+}
+
+int DataBuffer::Write(const void *data, size_t n)
+{
+    BufferChain *chain;
+    size_t bufsize;
+
+    /* Check if the last chain contains enough space */
+    chain = NULL;
+    if (!m_chains.empty())
+    {
+        chain = m_chains[m_chains.size() - 1];
+        if (chain->GetFreeSpace() < n)
+        {
+            chain = NULL;
+        }
+    }
+    /* Not enough free space/empty chain list */
+    if (!chain)
+    {
+        bufsize = n;
+        if (bufsize < 4096)
+            bufsize = 4096;
+        chain = NewMemorySegment(bufsize);
+    }
+    memcpy(chain->m_buffer + chain->m_offset, data, n);
+    chain->m_offset += n;
+    m_length += n;
+    return n;
+}
+
+bool DataBuffer::Readln(std::string &line) {
+    BufferPtr ptr;
+
+    if (!FindEOL(ptr))
+        return false;
+    line.resize(ptr.m_offset);
+    /* TODO Find a better way to do this */
+    CopyOut((char *) line.c_str(), ptr.m_offset);
+    if (line.size() > 0 && line[line.size() - 1] == '\n')
+        line.resize(line.size() - 1);
+    if (line.size() > 0 && line[line.size() - 1] == '\r')
+        line.resize(line.size() - 1);
+    return true;
 }
 
 int DataBuffer::Receive(int fd)
 {
-    size_t avail;
+    BufferChain *chain;
     ssize_t n;
 
-    avail = GetAvailableSpace();
-    n = recv(fd, m_buffer + m_writePos, avail, 0);
-    if (n > 0)
+    chain = NULL;
+    if (m_chains.size() > 0)
     {
-        m_writePos += n;
+        chain = m_chains[m_chains.size() - 1];
+        if (chain->GetFreeSpace() == 0)
+            chain = NULL;
     }
-    if (m_writePos == m_capacity)
-        m_writePos = 0;
-    return (int)n;
+    if (!chain)
+        chain = NewMemorySegment(4096);
+    n = recv(fd, chain->m_buffer + chain->m_offset, chain->GetFreeSpace(), 0);
+    printf("Chain : %d\n", chain->GetFreeSpace());
+    if (n <= 0)
+        return n;
+    chain->m_offset += n;
+    m_length += n;
+    return n;
 }
 
-bool DataBuffer::GetLine(std::string &line)
+BufferChain *DataBuffer::NewMemorySegment(size_t minCapacity)
 {
+    std::vector<BufferChain *>::iterator it;
+    std::vector<BufferChain *>::iterator chainIt;
+    BufferChain *chain;
+    size_t closestCap;
+
+    closestCap = SIZE_MAX;
+    chainIt = m_freeChains.end();
+    for (it = m_freeChains.begin(); it != m_freeChains.end(); ++it)
+    {
+        chain = *it;
+        if (chain->m_type == kSegmentType_Memory &&
+        chain->m_size >= minCapacity &&
+        chain->m_size < closestCap)
+        {
+            closestCap = chain->m_size;
+            chainIt = it;
+        }
+    }
+    if (chainIt != m_freeChains.end())
+    {
+        chain = *chainIt;
+        m_freeChains.erase(chainIt);
+        chain->m_offset = 0;
+        chain->m_misalign = 0;
+        printf("Recycled chain\n");
+    }
+    else
+    {
+        chain = new BufferChain;
+        chain->m_type = kSegmentType_Memory;
+        chain->m_size = minCapacity;
+        chain->m_misalign = 0;
+        chain->m_offset = 0;
+        chain->m_buffer = new char[minCapacity];
+        printf("Allocated new chain\n");
+    }
+    m_chains.push_back(chain);
+    return chain;
+}
+
+int DataBuffer::FindEOL(BufferPtr &ptr) const
+{
+    std::vector<BufferChain *>::const_iterator it;
+    BufferChain *chain;
     size_t i;
-    size_t len;
+    size_t off;
     bool nl;
 
+    off = 0;
     nl = false;
-    line.clear();
-    for (i = m_readPos, len = 0; i != m_writePos && !nl; )
+    for (it = m_chains.cbegin(); it != m_chains.cend() && !nl; ++it)
     {
-        if (m_buffer[i] == '\n')
-            nl = true;
-        else {
-            ++len;
-            line += m_buffer[i];
+        chain = *it;
+
+        /* XXX: Shouldn't attempt to read a file */
+        if (chain->m_type == kSegmentType_Memory)
+        {
+            for (i = chain->m_misalign; i < chain->m_offset && !nl; ++i, ++off)
+            {
+                nl = (chain->m_buffer[i] == '\n');
+            }
         }
-
-        if (++i == m_capacity)
-            i = 0;
     }
-
-    if (nl)
-    {
-        if (line.size() > 0 && line[line.size() - 1] == '\r')
-            line.resize(line.size() - 1);
-        printf("i = %d, readpos = %d\n", i, m_readPos);
-        m_readPos = i;
+    if (nl) {
+        ptr.m_offset = off;
+        ptr.m_chain = chain;
+        ptr.m_chainOffset = i;
     }
     return nl;
 }
 
-int DataBuffer::Get()
+int DataBuffer::CopyOut(void *data, size_t n)
 {
-    int ch;
+    tChainList::iterator it;
+    BufferChain *chain;
+    size_t sz;
+    size_t total;
+    char *ptr;
 
-    ch = -1;
-    if (m_readPos != m_writePos)
+    ptr = (char *)data;
+    total = 0;
+    for (it = m_chains.begin(); it != m_chains.end() && total < n; )
     {
-        ch = m_buffer[m_readPos++];
-        if (m_readPos == m_capacity)
-            m_readPos = 0;
+        chain = *it;
+        sz = chain->m_offset - chain->m_misalign;
+        if (sz > n)
+            sz = n;
+        memcpy(ptr + total, chain->m_buffer + chain->m_misalign, sz);
+        chain->m_misalign += sz;
+        total += sz;
+        m_length -= sz;
+        if (chain->m_misalign == chain->m_offset &&
+            chain->m_offset == chain->m_size)
+        {
+            printf("Empty chain, recycling\n");
+            it = m_chains.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
     }
-    return ch;
+    return total;
 }
 
-int DataBuffer::Put(int ch)
+int DataBuffer::Send(int fd)
 {
-    if (m_readPos == ((m_writePos + 1) % m_capacity))
+    tChainList::iterator it;
+    BufferChain *chain;
+    size_t sz;
+    ssize_t n;
+    ssize_t total;
+    char buf[1024];
+
+    total = 0;
+    for (it = m_chains.begin(); it != m_chains.end(); ) {
+        chain = *it;
+        if (chain->m_type == kSegmentType_Memory) {
+            sz = chain->m_offset - chain->m_misalign;
+            n = send(fd, chain->m_buffer + chain->m_misalign, sz, 0);
+            if (n <= 0) {
+                if (n == 0 && total > 0)
+                    return total;
+                return n;
+            }
+            total += n;
+            m_length -= n;
+        } else if (chain->m_type == kSegmentType_File) {
+            if (chain->m_misalign > 0) {
+              //  n = send(fd, chain->m_buffer)
+            }
+            else {
+                n = read(chain->m_fd, chain->m_buffer, 4096);
+                if (n <= 0) {
+                    if (n == 0 && total > 0)
+                        return total;
+                    return n;
+                }
+                chain->m_misalign = n;
+            }
+        }
+        else
+            break ;
+        chain->m_misalign += n;
+        if (chain->m_misalign == chain->m_offset) {
+            it = m_chains.erase(it);
+            m_freeChains.push_back(chain);
+        }
+        else {
+            break ;
+        }
+
+    }
+    return total;
+}
+
+int DataBuffer::AddFile(int fd, size_t offset, size_t length)
+{
+    tChainList::iterator it;
+    BufferChain *chain;
+
+    if (offset != 0)
         return -1;
-    m_buffer[m_writePos++] = (char)ch;
-    if (m_writePos == m_capacity)
-        m_writePos = 0;
-    return 0;
-}
 
-int DataBuffer::Put(std::string s)
-{
-    size_t i;
-
-    for (i = 0; i < s.size(); ++i)
+    /* Find a spare file segment chain */
+    for (it = m_freeChains.begin(); it != m_freeChains.end(); ++it)
     {
-        if (Put(s[i]) < 0)
-            return -1;
+        chain = *it;
+        if (chain->m_type == kSegmentType_File)
+            break ;
     }
+    if (it == m_freeChains.end())
+    {
+        chain = new BufferChain;
+        chain->m_type = kSegmentType_File;
+        chain->m_buffer = new char[4096];
+    }
+    else
+    {
+        m_freeChains.erase(it);
+    }
+    chain->m_offset = offset;
+    chain->m_size = length;
+    chain->m_misalign = 0;
+    chain->m_fd = fd;
+    m_length += length;
+    m_chains.push_back(chain);
     return 0;
-}
-
-size_t DataBuffer::GetAvailableSpace() const
-{
-    if (m_readPos <= m_writePos) {
-        return m_capacity - m_writePos;
-    }
-    return m_readPos - m_writePos;
 }
