@@ -69,7 +69,8 @@ void SelectEventLoop::Run()
 
             if (fd > nfds)
                 nfds = fd;
-            FD_SET(fd, &rdset);
+            if (evt->IsReadable())
+                 FD_SET(fd, &rdset);
             if (evt->IsWritable())
                 FD_SET(fd, &wrset);
         }

@@ -14,6 +14,7 @@ public:
     virtual void HandleReadEvent();
     virtual void HandleWriteEvent();
 
+    virtual bool IsReadable() const;
     virtual bool IsWritable() const;
 
     virtual int GetFileDescriptor() const;

@@ -13,6 +13,7 @@ public:
     virtual void HandleReadEvent() = 0;
     virtual void HandleWriteEvent() = 0;
 
+    virtual bool IsReadable() const = 0;
     virtual bool IsWritable() const = 0;
 
     virtual int GetFileDescriptor() const = 0;

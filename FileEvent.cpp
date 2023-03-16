@@ -48,6 +48,11 @@ void FileEvent::HandleReadEvent()
     }
 }
 
+bool FileEvent::IsReadable() const
+{
+    return !m_eof && !m_errorFlag;
+}
+
 void FileEvent::WriteToBuffer(DataBuffer *buf)
 {
     int n;

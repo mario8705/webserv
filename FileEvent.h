@@ -17,6 +17,8 @@ public:
 
     void HandleReadEvent();
 
+    bool IsReadable() const;
+
     void WriteToBuffer(DataBuffer *buf);
 
     bool HasDataAvailable() const;

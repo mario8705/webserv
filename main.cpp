@@ -25,6 +25,7 @@ public:
     void HandleReadEvent();
     void HandleWriteEvent();
 
+    bool IsReadable() const;
     bool IsWritable() const;
 
 protected:
@@ -145,6 +146,11 @@ void SocketEvent::HandleWriteEvent() {
         m_fileEvent->WriteToBuffer(m_outputBuffer);
     }
     m_outputBuffer->Send(m_fd);
+}
+
+bool SocketEvent::IsReadable() const
+{
+    return true;
 }
 
 bool SocketEvent::IsWritable() const

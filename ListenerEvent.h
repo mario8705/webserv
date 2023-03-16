@@ -16,6 +16,8 @@ public:
 
     virtual void HandleReadEvent();
 
+    virtual bool IsReadable() const;
+
     static ListenerEvent *
     CreateAndBind(IConnectionHandler *handler, struct sockaddr *addr, socklen_t addrlen, int backlog);
 

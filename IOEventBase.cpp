@@ -16,6 +16,11 @@ void IOEventBase::HandleWriteEvent()
 {
 }
 
+bool IOEventBase::IsReadable() const
+{
+    return false;
+}
+
 bool IOEventBase::IsWritable() const
 {
     return false;
