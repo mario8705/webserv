@@ -36,6 +36,7 @@ public:
     server(std::string content);
     ~server();
     std::string getStringConfig();
+    std::vector<std::string> splitted_lines();
 
 private:
     std::string _stringconfig;

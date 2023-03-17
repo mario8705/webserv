@@ -21,7 +21,12 @@ server::~server() {
 std::string config::getStringConfig() {return(_stringconfig);}
 std::string server::getStringConfig() {return(_stringconfig);}
 
-
+/*
+ *
+ * Découpe le fichier de configuration à chaue "server {" afin de
+ * rendre plus simple la lecture du fichier de configuration
+ *
+ * */
 std::vector<std::string> config::makeServ(std::string conf)
 {
     std::vector<std::string> servers;
@@ -31,20 +36,18 @@ std::vector<std::string> config::makeServ(std::string conf)
     {
         pos_next = conf.find("server {", pos + 1);
         if (pos_next == std::string::npos)
-        {
             servers.push_back(conf.substr(pos));
-        }
         else
-        {
             servers.push_back(conf.substr(pos, pos_next - pos));
-        }
         pos = pos_next;
     }
     return servers;
 }
 /*
-    Récupère le fichier de config (config.conf), vérifie s'il existe bien.
-    Renvois ledit document sous forme de string.
+ *
+ * Récupère le fichier de config (config.conf), vérifie s'il existe bien.
+ * Renvois ledit document sous forme de string.
+ *
  */
 std::string getconfigfile(void)
 {
@@ -58,6 +61,7 @@ std::string getconfigfile(void)
         std::string line;
         while (std::getline(file, line, '\n')) {
             content += line;
+            content += '\n';
         }
 
         file.close();
@@ -67,12 +71,56 @@ std::string getconfigfile(void)
     return(content);
 }
 
-/*std::map <std::string, std::string> config::configtomapstring(std::string conf)
-{
-    std::stringstream ss(conf);
+std::vector<std::string> server::splitted_lines(){
+    //std::cout << _stringconfig <<std::endl;
+    std::vector<std::string> splitted_conf;
+    std::vector<std::string> final_conf;
+    std::vector<std::string> result;
+    std::map<std::string, std::string> map;
+    std::string buffer;
+    std::stringstream ss(_stringconfig);
+    while (std::getline(ss, buffer, '\n'))
+    {
+        splitted_conf.push_back(buffer);
+    }
+    for (size_t i = 0; i < splitted_conf.size(); i++)
+    {
+        std::size_t first_non_space = splitted_conf[i].find_first_not_of(' ');
+        final_conf.push_back(splitted_conf[i].substr(first_non_space));
+        //std::cout << final_conf[i] << std::endl;
+    }
+    for (size_t i = 0; i < final_conf.size(); i++)
+    {
+        size_t pos = final_conf[i].find(' ');
+        if (pos != std::string::npos)
+        {
+            result.push_back(final_conf[i].substr(0, pos));
+            result.push_back(final_conf[i].substr(pos + 1));
+        }
+        else
+        {
+            size_t check = final_conf[i].find("}");
+            if (check != std::string::npos)
+                result.push_back(final_conf[i]);
+            else
+            {
+                std::cout << "Wrong syntax in Conf.config\n";
+                exit(1);
+            }
+        }
+    }
+    std::cout << std::endl;
+    for (size_t i = 2; i < result.size(); i++)
+    {
+        map.insert(std::make_pair(result[i], result[i + 1]));
+        i++;
+    }
 
-}*/
-
+    for (std::map<std::string, std::string>::iterator it = map.begin(); it != map.end(); it++) {
+        std::cout << it->first << " : " << it->second << std::endl;
+    }
+    return (result);
+}
 
 int main()
 {
@@ -85,12 +133,9 @@ int main()
         for (size_t i = 0; i < splited_serv.size(); i++)
         {
             servers.push_back(splited_serv[i]);
+            servers[i].splitted_lines();
+            //std::cout << servers[i].getStringConfig() << std::endl;
         }
-          std::cout << servers[0].getStringConfig() << std::endl;
-          std::cout << servers[1].getStringConfig() << std::endl;
-          std::cout << servers[2].getStringConfig() << std::endl;
-
-
     }
     catch (std::exception &e)
     {
