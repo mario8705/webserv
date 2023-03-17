@@ -4,13 +4,23 @@
 
 #include "ProtocolCodec.h"
 #include <sstream>
+#include <stdexcept>
 #include "DataBuffer.h"
 #include "HttpException.h"
+#include "RequestHandler.h"
 
-ProtocolCodec::ProtocolCodec(DataBuffer *inputBuffer, DataBuffer *outputBuffer)
-    : m_inputBuffer(inputBuffer), m_outputBuffer(outputBuffer)
+ProtocolCodec::ProtocolCodec(IRequestHandler *requestHandler, DataBuffer *inputBuffer, DataBuffer *outputBuffer)
+    : m_requestHandler(requestHandler), m_inputBuffer(inputBuffer), m_outputBuffer(outputBuffer)
 {
     m_lineNumber = 0;
+
+    m_supportedMethods.insert(std::make_pair("GET", kHttpMethod_Get));
+    m_supportedMethods.insert(std::make_pair("POST", kHttpMethod_Post));
+    m_supportedMethods.insert(std::make_pair("PUT", kHttpMethod_Put));
+    m_supportedMethods.insert(std::make_pair("PATCH", kHttpMethod_Patch));
+    m_supportedMethods.insert(std::make_pair("DELETE", kHttpMethod_Delete));
+    m_supportedMethods.insert(std::make_pair("HEAD", kHttpMethod_Head));
+    m_supportedMethods.insert(std::make_pair("OPTIONS", kHttpMethod_Options));
 }
 
 void ProtocolCodec::ProcessData()
@@ -23,20 +33,11 @@ void ProtocolCodec::ProcessData()
                 ParseRequest(line);
             } else {
                 if (line.empty()) {
-                    DataBuffer buf;
-
-                    printf("%s %s\n", m_method.c_str(), m_path.c_str());
-
-                    EncodeResponse(&buf, m_httpVersion, 200, "Ok");
-                    buf.PutString("Transfer-Encoding: chunked\r\n");
-                    buf.PutString("\r\n");
-                    buf.PutString("b\r\nOne Ok Rock\r\n");
-                    buf.PutString("0\r\n\r\n");
+                    DispatchRequest();
 
                     m_lineNumber = 0;
                     m_headers.clear();
-
-                    m_outputBuffer->AddBuffer(&buf);
+                    continue ;
                 }
                 else {
                     ParseHeader(line);
@@ -44,8 +45,8 @@ void ProtocolCodec::ProcessData()
             }
             ++m_lineNumber;
         }
-        if (m_inputBuffer->GetLength() > 4)
-            throw HttpException(404);
+        if (m_inputBuffer->GetLength() > 16384)
+            throw HttpException(404); /* TODO line too long */
     }
     catch (const HttpException &e)
     {
@@ -55,6 +56,7 @@ void ProtocolCodec::ProcessData()
 
 void ProtocolCodec::ParseRequest(std::string line)
 {
+    tHttpMethodsMap::const_iterator it;
     std::string method;
     std::string path;
     std::string httpVersion;
@@ -65,15 +67,24 @@ void ProtocolCodec::ParseRequest(std::string line)
     lastSep = line.find_last_of(' ');
     if (firstSep == lastSep || firstSep == std::string::npos)
     {
-        // TODO
+        throw HttpException(500); /* TODO invalid request */
     }
     method = line.substr(0, firstSep);
     path = line.substr(firstSep + 1, lastSep - firstSep - 1);
     httpVersion = line.substr(lastSep + 1);
 
-    m_method = method;
+    it = m_supportedMethods.find(method);
+    if (it == m_supportedMethods.end())
+    {
+        throw HttpException(500); /* TODO unsupported method */
+    }
+
+    m_method = it->second;
     m_path = path;
     m_httpVersion = httpVersion;
+
+    printf("Method: %s\n", method.c_str());
+    printf("Path: %s\n", path.c_str());
 }
 
 static void ltrim(std::string &s)
@@ -114,7 +125,7 @@ void ProtocolCodec::EncodeResponse(DataBuffer *buffer, std::string httpVersion, 
     buffer->PutString(ss.str());
 }
 
-void ProtocolCodec::EncodeHeaders(const tHttpHeaderMap &headers)
+void ProtocolCodec::EncodeHeaders(DataBuffer *buffer, const tHttpHeaderMap &headers)
 {
     std::stringstream ss;
     tHttpHeaderMap::const_iterator it;
@@ -123,5 +134,108 @@ void ProtocolCodec::EncodeHeaders(const tHttpHeaderMap &headers)
     {
         ss << it->first << ": " << it->second << "\r\n";
     }
-    m_outputBuffer->PutString(ss.str());
+    buffer->PutString(ss.str());
+}
+
+void ProtocolCodec::DispatchRequest()
+{
+    HttpRequest request;
+    HttpResponse response;
+    tHttpHeaderMap headers;
+    DataBuffer *responseBody;
+
+    request.SetMethod(m_method);
+    request.SetPath(m_path);
+
+    try {
+        m_requestHandler->HandleRequest(&request, &response);
+    }
+    catch (const HttpException &e)
+    {
+        printf("Http exception\n");
+    }
+    catch (const std::exception &e)
+    {
+        printf("Generic exception: %s\n", e.what());
+    }
+    catch (...)
+    {
+        printf("Unknown exception\n");
+    }
+
+    const tHttpHeaderMap &responseHeaders = response.GetHeaders();
+    headers.insert(responseHeaders.begin(), responseHeaders.end());
+
+    EncodeResponse(m_outputBuffer, m_httpVersion, response.GetStatus(), response.GetStatusMessage());
+
+    responseBody = response.GetOutputBuffer();
+    if (!response.IsExternal()) {
+        headers["Transfer-Encoding"] = "chunked";
+    }
+
+    EncodeHeaders(m_outputBuffer, headers);
+
+    if (!response.IsExternal()) {
+        m_outputBuffer->PutString("\r\n");
+
+        EncodeChunk(m_outputBuffer, responseBody);
+        EncodeChunk(m_outputBuffer, NULL);
+    }
+}
+
+template <typename T>
+std::string to_base(T val, int base = 10)
+{
+    static const char *digits = "0123456789abcdef";
+    std::string s;
+
+    do {
+        s.insert(s.begin(), digits[val % base]);
+        val /= base;
+    } while (val > 0);
+    return s;
+}
+
+void ProtocolCodec::EncodeChunk(DataBuffer *buffer, DataBuffer *chunk)
+{
+    size_t chunkSize;
+
+    chunkSize = 0;
+    if (chunk)
+        chunkSize = chunk->GetLength();
+
+    buffer->PutString(to_base(chunkSize, 16));
+    buffer->PutString("\r\n");
+
+    if (chunk)
+        buffer->AddBuffer(chunk);
+    buffer->PutString("\r\n");
+}
+
+ProtocolCodec::HttpRequest::HttpRequest()
+{
+}
+
+ProtocolCodec::HttpRequest::~HttpRequest()
+{
+}
+
+void ProtocolCodec::HttpRequest::SetMethod(HttpMethod method)
+{
+    m_method = method;
+}
+
+void ProtocolCodec::HttpRequest::SetPath(std::string path)
+{
+    m_rawPath = path;
+}
+
+ProtocolCodec::HttpResponse::HttpResponse()
+{
+    m_status = 200;
+    m_message = "Ok";
+}
+
+ProtocolCodec::HttpResponse::~HttpResponse()
+{
 }

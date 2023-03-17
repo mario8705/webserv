@@ -13,7 +13,9 @@ SocketEvent::SocketEvent(ServerHost *host, int fd)
 {
     m_receiveBuffer = new DataBuffer;
     m_outputBuffer = new DataBuffer;
-    m_protocolCodec = new ProtocolCodec(m_receiveBuffer, m_outputBuffer);
+    m_protocolCodec = new ProtocolCodec(this, m_receiveBuffer, m_outputBuffer);
+
+    m_cgi = false;
 }
 
 SocketEvent::~SocketEvent()
@@ -27,7 +29,6 @@ SocketEvent::~SocketEvent()
 void SocketEvent::HandleReadEvent()
 {
     int n;
-    std::string line;
 
     n = m_receiveBuffer->Receive(m_fd);
     if (n <= 0)
@@ -43,6 +44,9 @@ void SocketEvent::HandleReadEvent()
 void SocketEvent::HandleWriteEvent()
 {
     m_outputBuffer->Send(m_fd);
+
+    if (m_outputBuffer->GetLength() == 0)
+        HandleOutputDrained();
 }
 
 bool SocketEvent::IsReadable() const
@@ -54,4 +58,37 @@ bool SocketEvent::IsReadable() const
 bool SocketEvent::IsWritable() const
 {
     return m_outputBuffer->GetLength() > 0;
+}
+
+void SocketEvent::HandleRequest(Request *request, Response *response)
+{
+    response->SetStatus(200);
+    response->SetStatusMessage("Ok");
+    response->SetExternal(true);
+
+    m_cgi = true;
+
+    //response->AddHeader("Content-Type", "text/html; charset=UTF-8");
+    //response->GetOutputBuffer()->PutString(request->GetRawPath());
+}
+
+void SocketEvent::HandleOutputDrained()
+{
+    pid_t p;
+    std::vector<std::string> args;
+
+    if (m_cgi)
+    {
+        p = ::fork();
+        if (p == 0) {
+            if (::dup2(m_fd, 1) < 0) {
+                /* TODO */
+            }
+            if (::execl("/usr/local/bin/php-cgi", "php-cgi", "index.php", NULL) < 0) {
+                perror("execl");
+            }
+            exit(1);
+        }
+        m_host->Disconnect(this);
+    }
 }
