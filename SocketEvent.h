@@ -8,6 +8,7 @@
 
 class ServerHost;
 class DataBuffer;
+class ProtocolCodec;
 
 class SocketEvent : public IOEventBase
 {
@@ -25,6 +26,7 @@ protected:
     ServerHost *m_host;
     DataBuffer *m_receiveBuffer;
     DataBuffer *m_outputBuffer;
+    ProtocolCodec *m_protocolCodec;
 };
 
 #endif //WEBSERV_SOCKETEVENT_H

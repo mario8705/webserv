@@ -7,3 +7,7 @@
 BufferChain::BufferChain()
 {
 }
+
+BufferChain::~BufferChain()
+{
+}

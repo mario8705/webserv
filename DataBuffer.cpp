@@ -56,6 +56,11 @@ int DataBuffer::Write(const void *data, size_t n)
     return n;
 }
 
+int DataBuffer::PutString(const std::string &s)
+{
+    return Write(s.c_str(), s.size());
+}
+
 bool DataBuffer::Readln(std::string &line) {
     BufferPtr ptr;
 
@@ -284,4 +289,17 @@ int DataBuffer::AddFile(int fd, size_t offset, size_t length)
     m_length += length;
     m_chains.push_back(chain);
     return 0;
+}
+
+void DataBuffer::AddBuffer(DataBuffer *buffer)
+{
+    tChainList::iterator it;
+
+    m_length += buffer->m_length;
+    for (it = buffer->m_chains.begin(); it != buffer->m_chains.end(); ++it)
+    {
+        m_chains.push_back(*it);
+    }
+    buffer->m_length = 0;
+    buffer->m_chains.clear();
 }

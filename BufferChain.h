@@ -15,6 +15,7 @@ class BufferChain
 {
 public:
     BufferChain();
+    ~BufferChain();
 
     size_t GetFreeSpace() const
     {
