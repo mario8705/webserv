@@ -29,7 +29,6 @@ void SocketEvent::HandleReadEvent()
     n = m_receiveBuffer->Receive(m_fd);
     if (n <= 0)
     {
-        printf("recv() <= 0\n");
         m_host->Disconnect(this);
     }
     else
@@ -38,7 +37,12 @@ void SocketEvent::HandleReadEvent()
         {
             if (line.empty())
             {
+                std::string html = "<h1>Welcome to webserv !</h1><p>Everything is working great :)</p>";
+                std::string headers = "HTTP/1.1 200 Ok\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: " + std::to_string(html.size());
+                headers += "\r\n\r\n";
 
+                m_outputBuffer->Write(headers.c_str(), headers.size());
+                m_outputBuffer->Write(html.c_str(), html.size());
             }
             printf("Got a line: %s\n", line.c_str());
         }
