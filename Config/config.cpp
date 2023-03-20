@@ -40,7 +40,6 @@ std::vector<std::string>	split_with_space(std::string line)
         }
         else
         {
-            //to create a new word in the vector
             if (j != k)
             {
                 j = k;
@@ -59,24 +58,27 @@ std::vector<std::string> tokenization(std::string line, std::vector<std::string>
     std::vector<std::string> tmp2;
 
 
+
+    size_t is_title = line.find('{');
+    if (is_title != std::string::npos)
+    {
+        conf.push_back("Title : " + line);
+        conf.push_back("End of line \n");
+        return(conf);
+    }
     tmp = split_with_space(line);
+    size_t j = 0;
     for (size_t i = 0; i < tmp.size(); i++)
     {
-        if (tmp[i] == "{")
-        {
+         if (tmp[i] == "{")
             conf.push_back("Open bracket : " + tmp[i]);
-        }
         else if (tmp[i] == "}")
-        {
             conf.push_back("Close bracket : " + tmp[i]);
-        }
         else
             conf.push_back("Text : " + tmp[i]);
     }
     conf.push_back("End of line \n");
     return(conf);
-
-
 }
 
 std::vector<std::string> getconfigfile(void)
@@ -84,18 +86,16 @@ std::vector<std::string> getconfigfile(void)
     std::string filename = "../config.conf";
     std::ifstream file(filename.c_str());
     std::string content;
-    std::vector<std::string> tmp;
-    std::vector<std::string> tmp2;
     std::vector<std::string> final;
+    std::vector<std::string> test;
 
     if (file.good())
     {
         int it;
         std::string line;
         while (std::getline(file, line, '\n')) {
-           // tmp.push_back(line);
-            tokenization(line, final);
-           // final.push_back("\n");
+            if (line.size() != 0)
+                tokenization(line, final);
         }
 
         file.close();
@@ -104,6 +104,9 @@ std::vector<std::string> getconfigfile(void)
         exit(1);
     for (size_t i = 0; i < final.size(); i++)
     {
+        size_t isnl = final[i].find('\n');
+        if (isnl != std::string::npos)
+            std::cout << "END OF LINE SPOTTED || ";
         std::cout << final[i] << std::endl;
     }
     return(final);
