@@ -8,14 +8,13 @@
 #include <sstream>
 #include <algorithm>
 #include <cstring>
-
+#include <cctype>
 
 class config {
 
 public :
     config(std::string content);
     ~config();
-    //void &operator=(const config &new);
     std::vector<std::string> makeServ(std::string conf);
     std::map<std::string, std::string> configtomapstring(std::string conf);
 
