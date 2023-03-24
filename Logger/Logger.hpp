@@ -18,6 +18,13 @@
 #define Cyan "\u001b[36m"
 #define Reset "\u001b[37m"
 
+enum e_level{
+    DEBUG,
+    INFO,
+    WARNING,
+    ERROR
+};
+
 class Logger
 {
 private:
@@ -30,8 +37,9 @@ public:
 	Logger &operator=(const Logger &toAssign);
 
 
-	void log(const std::string& message);
-
+	void log(int level);
+	void log(int level, const std::string &message);
+    void setOutput(std::ostream &out);
 
 };
 

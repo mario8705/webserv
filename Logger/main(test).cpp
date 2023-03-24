@@ -6,9 +6,9 @@
 
 int main() {
 	Logger logger;
-	logger.log("debug");
-	logger.log("info");
-	logger.log("warning");
-	logger.log("error");
+    logger.log(DEBUG, "Oui Oui baguette");
+    logger.log(INFO, "");
+    logger.log(WARNING, "");
+    logger.log(ERROR, "Ceci est une erreur");
 	return 0;
 }
