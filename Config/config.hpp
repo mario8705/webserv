@@ -13,12 +13,12 @@
 class config {
 
 public :
-    config(std::string content);
+    config(std::vector<std::string> conf);
     ~config();
     std::vector<std::string> makeServ(std::string conf);
     std::map<std::string, std::string> configtomapstring(std::string conf);
 
-    std::string getStringConfig();
+   // std::string getStringConfig();
 
     class InvalidConfigFile : public std::exception {
         public :
@@ -26,7 +26,7 @@ public :
     };
 
 private:
-    std::string _stringconfig;
+    std::vector<std::string> _config;
     std::map<std::string, std::string> _mapconfig;
 };
 

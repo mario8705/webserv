@@ -1,5 +1,5 @@
 #include "config.hpp"
-config::config(std::string content) : _stringconfig(content)
+config::config(std::vector<std::string> content) : _config(content)
 {
     std::cout << "config on\n";
 }
@@ -17,7 +17,7 @@ server::~server() {
     //std::cout << "server destructor\n";
 }
 
-std::string config::getStringConfig() {return(_stringconfig);}
+//std::string config::getStringConfig() {return(_stringconfig);}
 std::string server::getStringConfig() {return(_stringconfig);}
 
 std::vector<std::string>	split_with_space(std::string line)
@@ -55,22 +55,21 @@ std::vector<std::string> tokenization(std::string line, std::vector<std::string>
 {
     std::vector<std::string> clean;
     std::vector<std::string> tmp;
-    std::vector<std::string> tmp2;
-
-
 
     size_t is_title = line.find('{');
     if (is_title != std::string::npos)
     {
-        conf.push_back("Title : " + line);
+        std::size_t first_non_space = line.find_first_not_of(" /t/n");
+        std::string title_line = line.substr(first_non_space, line.length() - 1 - first_non_space);
+        conf.push_back("Title : " + title_line);
+        conf.push_back("Open bracket : {");
         conf.push_back("End of line \n");
         return(conf);
     }
     tmp = split_with_space(line);
-    size_t j = 0;
     for (size_t i = 0; i < tmp.size(); i++)
     {
-         if (tmp[i] == "{")
+        if (tmp[i] == "{")
             conf.push_back("Open bracket : " + tmp[i]);
         else if (tmp[i] == "}")
             conf.push_back("Close bracket : " + tmp[i]);
@@ -88,6 +87,7 @@ std::vector<std::string> getconfigfile(void)
     std::string content;
     std::vector<std::string> final;
     std::vector<std::string> test;
+    std::vector<server> servers;
 
     if (file.good())
     {
@@ -97,24 +97,48 @@ std::vector<std::string> getconfigfile(void)
             if (line.size() != 0)
                 tokenization(line, final);
         }
-
         file.close();
     }
     else
         exit(1);
     for (size_t i = 0; i < final.size(); i++)
     {
-        size_t isnl = final[i].find('\n');
-        if (isnl != std::string::npos)
-            std::cout << "END OF LINE SPOTTED || ";
+        size_t isnl = final[i].find("Title : ");
+        //if (isnl != std::string::npos)
+            //std::cout << "Title SPOTTED || ";
         std::cout << final[i] << std::endl;
     }
     return(final);
 }
 
+void split_serv(std::vector<std::string> args)
+{
+    std::vector<std::vector<std::string> > final;
+    size_t i = 0;
+    size_t j = 0;
+
+    std::cout << args.size();
+    while (i < args.size())
+    {
+        //size_t title = args[i].find("Title : ");
+        //if (title != std::string::npos)
+        //    j++;
+        final[j].push_back(args[i]);
+        i++;
+    }
+    /*std::vector<server> servers;
+    for (size_t k = 0; k < final.size(); k++)
+    {
+    }*/
+
+
+}
+
 int main()
 {
     std::vector<std::string> infile;
+    std::vector<std::vector<std::string> > final;
     infile = getconfigfile();
+    //split_serv(infile);
     //config conf(infile);
 }
