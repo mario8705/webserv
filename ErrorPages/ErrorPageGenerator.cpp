@@ -4,7 +4,7 @@
 
 #include "ErrorPageGenerator.hpp"
 
-ErrorPageGenerator::ErrorPageGenerator()
+ErrorPageGenerator::ErrorPageGenerator(): errorCode(200)
 {
 	generatePage(generateHeader(3, "Error"), generateBody("Unknown Error"));
 }
@@ -69,9 +69,11 @@ std::string ErrorPageGenerator::generateErrorPage()
 
 std::string ErrorPageGenerator::generateErrorPage(int error)
 {
+	int tmpErrCode = errorCode;
+
 	this->errorCode = error;
 	std::string result(generateErrorPage());
-	this->errorCode = 0;
+	this->errorCode = tmpErrCode;
 
 	return result;
 }
