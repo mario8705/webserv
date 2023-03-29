@@ -1,24 +1,32 @@
 #include "config.hpp"
-config::config(std::vector<std::string> content) : _config(content)
+
+Config::Config()
 {
     std::cout << "config on\n";
 }
 
-server::server(std::string content) : _stringconfig(content)
+Server::Server(std::vector<std::string> content) : _serverconfig(content)
 {
     std::cout << "server creation\n";
+    /*for (size_t i = 0; i < _servconfig.size(); i++)
+    {
+        std::cout << _servconfig[i];
+    }*/
 }
 
-config::~config() {
+Config::~Config() {
     std::cout << "config destructor\n";
 }
 
-server::~server() {
-    //std::cout << "server destructor\n";
+Server::~Server() {
+    std::cout << "server destructor\n";
 }
 
-//std::string config::getStringConfig() {return(_stringconfig);}
-std::string server::getStringConfig() {return(_stringconfig);}
+std::vector<std::string> Config::getConfig() {return(_config);}
+std::vector<std::string> Server::getServConfig() {return(_serverconfig);}
+std::string Server::getServConfigIndex(size_t index) {return(_serverconfig[index]);}
+
+std::vector<Server> Config::getServConfig() {return(_servconfig);}
 
 std::vector<std::string>	split_with_space(std::string line)
 {
@@ -51,7 +59,7 @@ std::vector<std::string>	split_with_space(std::string line)
     return (words);
 }
 
-std::vector<std::string> tokenization(std::string line, std::vector<std::string> &conf)
+std::vector<std::string> Config::tokenization(std::string line, std::vector<std::string> &conf)
 {
     std::vector<std::string> clean;
     std::vector<std::string> tmp;
@@ -80,14 +88,11 @@ std::vector<std::string> tokenization(std::string line, std::vector<std::string>
     return(conf);
 }
 
-std::vector<std::string> getconfigfile(void)
+void Config::makeConfig()
 {
     std::string filename = "../config.conf";
     std::ifstream file(filename.c_str());
-    std::string content;
     std::vector<std::string> final;
-    std::vector<std::string> test;
-    std::vector<server> servers;
 
     if (file.good())
     {
@@ -95,50 +100,60 @@ std::vector<std::string> getconfigfile(void)
         std::string line;
         while (std::getline(file, line, '\n')) {
             if (line.size() != 0)
-                tokenization(line, final);
+                Config::tokenization(line, final);
         }
         file.close();
     }
     else
         exit(1);
-    for (size_t i = 0; i < final.size(); i++)
-    {
-        size_t isnl = final[i].find("Title : ");
-        //if (isnl != std::string::npos)
-            //std::cout << "Title SPOTTED || ";
-        std::cout << final[i] << std::endl;
-    }
-    return(final);
+    final.push_back("End of file\n");
+    _config = final;
 }
 
-void split_serv(std::vector<std::string> args)
+void Config::split_serv(std::vector<std::string> args)
 {
-    std::vector<std::vector<std::string> > final;
+    std::vector<std::string> final;
     size_t i = 0;
-    size_t j = 0;
 
-    std::cout << args.size();
     while (i < args.size())
     {
-        //size_t title = args[i].find("Title : ");
-        //if (title != std::string::npos)
-        //    j++;
-        final[j].push_back(args[i]);
-        i++;
+        size_t title = args[i].find("Title : server");
+        if (title != std::string::npos)
+        {
+            final.push_back(args[i]);
+            i++;
+            size_t split = args[i].find("Title : server");
+            while (i < args.size())
+            {
+                split = args[i].find("Title : server");
+                if (split != std::string::npos)
+                    break;
+                final.push_back(args[i]);
+                i++;
+            }
+            _servconfig.push_back(final);
+            std::cout << "End of Server\n\n";
+            final.clear();
+        }
+        else
+            i++;
     }
-    /*std::vector<server> servers;
-    for (size_t k = 0; k < final.size(); k++)
-    {
-    }*/
-
-
+    //for (size_t k = 0; k < _test[0].)
 }
 
 int main()
 {
     std::vector<std::string> infile;
-    std::vector<std::vector<std::string> > final;
-    infile = getconfigfile();
-    //split_serv(infile);
+    std::vector<std::string> final;
+    std::vector<Server> servers;
+    Config config;
+    config.makeConfig();
+    final = config.getConfig();
+    config.split_serv(final);
+    servers = config.getServConfig();
+    for (size_t i = 0; i < servers[0].getServConfig().size(); i++)
+{
+    std::cout << servers[0].getServConfigIndex(i);
+}
     //config conf(infile);
 }

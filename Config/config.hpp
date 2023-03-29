@@ -10,33 +10,38 @@
 #include <cstring>
 #include <cctype>
 
-class config {
+class Server {
+public:
+    Server(std::vector<std::string> content);
+    ~Server();
+    std::vector<std::string> getServConfig();
+    std::string getServConfigIndex(size_t index);
+
+private:
+    std::vector<std::string> _serverconfig;
+};
+
+class Config {
 
 public :
-    config(std::vector<std::string> conf);
-    ~config();
-    std::vector<std::string> makeServ(std::string conf);
-    std::map<std::string, std::string> configtomapstring(std::string conf);
+    //config(std::vector<std::string> conf);
+    Config();
+    ~Config();
+    std::vector<std::string> getConfig();
+    std::vector<Server> getServConfig();
 
-   // std::string getStringConfig();
+    /*Tokenization process make _config*/
+    void makeConfig();
+    std::vector<std::string> tokenization(std::string line, std::vector<std::string> &conf);
+    void split_serv(std::vector<std::string> args);
 
     class InvalidConfigFile : public std::exception {
-        public :
-            virtual const char* what() const throw() {return "invalid configfile";}
+    public :
+        virtual const char* what() const throw() {return "invalid configfile";}
     };
 
 private:
     std::vector<std::string> _config;
-    std::map<std::string, std::string> _mapconfig;
+    std::vector<Server> _servconfig;
 };
 
-class server {
-public:
-    server(std::string content);
-    ~server();
-    std::string getStringConfig();
-    std::vector<std::string> splitted_lines();
-
-private:
-    std::string _stringconfig;
-};
