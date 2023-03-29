@@ -19,6 +19,13 @@ HtmlGenerator::~HtmlGenerator() {
 
 }
 
+HtmlGenerator &HtmlGenerator::operator=(const HtmlGenerator &toAssign) {
+    this->htmlPage = toAssign.htmlPage;
+    this->request = toAssign.request;
+    this->header = toAssign.header;
+    return *this;
+}
+
 std::string HtmlGenerator::generateHeader(size_t nbMeta, const std::string& pageTitle)
 {
     header = "<head>\n<meta ";
@@ -40,9 +47,19 @@ static std::string generateP(const std::string &text)
     return "<p>" + text + "</p>";
 }
 
+static std::string generateP(const std::string &text, const std::string qualif)
+{
+    return "<p " + qualif + ">" + text + "</p>";
+}
+
 std::string HtmlGenerator::generateTableRow(const std::string &text)
 {
     return "<tr>\n" + text + "</tr>\n";
+}
+
+std::string HtmlGenerator::generateTableRow(const std::string &text, const std::string &qualif)
+{
+    return "<tr " + qualif + ">\n" + text + "</tr>\n";
 }
 
 std::string HtmlGenerator::generateTableDesc(const std::string &text)
@@ -50,6 +67,10 @@ std::string HtmlGenerator::generateTableDesc(const std::string &text)
     return "<td>" + text + "</td>\n";
 }
 
+std::string HtmlGenerator::generateTableDesc(const std::string &text, const std::string &qualif)
+{
+    return "<td " + qualif + ">" + text + "</td>\n";
+}
 
 std::string HtmlGenerator::generateBody(const std::string& content)
 {
@@ -68,4 +89,16 @@ std::string HtmlGenerator::generatePage(std::string header, std::string body)
 
 	result += "</html>\n";
 	return result;
+}
+
+std::string HtmlGenerator::insertImg(const std::string &link) {
+    return std::string("<img src=\"" + link + "\">");
+}
+
+std::string HtmlGenerator::insertImg(const std::string &link, const std::string &qualif) {
+    return std::string("<img " + qualif + " src=\"" + link + "\">");
+}
+
+std::string HtmlGenerator::generateStyleCss(const std::string content[]) { //todo (style...)
+    return std::string();
 }
