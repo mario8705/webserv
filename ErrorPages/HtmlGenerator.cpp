@@ -44,12 +44,12 @@ std::string HtmlGenerator::generateHeader(size_t nbMeta, const std::string& page
 
 static std::string generateP(const std::string &text)
 {
-    return "<p>" + text + "</p>";
+    return "<p>" + text + "</p>\n";
 }
 
 static std::string generateP(const std::string &text, const std::string qualif)
 {
-    return "<p " + qualif + ">" + text + "</p>";
+    return "<p " + qualif + ">" + text + "</p>\n";
 }
 
 std::string HtmlGenerator::generateTableRow(const std::string &text)
@@ -75,7 +75,7 @@ std::string HtmlGenerator::generateTableDesc(const std::string &text, const std:
 std::string HtmlGenerator::generateBody(const std::string& content)
 {
 	std::string body = "<body>\n";
-	body += content;
+	body += '\t' + content;
 	body += "</body>\n";
 	return body;
 }
@@ -84,21 +84,28 @@ std::string HtmlGenerator::generatePage(std::string header, std::string body)
 {
 	std::string result("<!DOCTYPE html>\n<html>\n");
 
-	result += header;
-	result += body;
+	result += '\t' + header;
+	result += '\t' + body;
 
 	result += "</html>\n";
 	return result;
 }
 
 std::string HtmlGenerator::insertImg(const std::string &link) {
-    return std::string("<img src=\"" + link + "\">");
+    return std::string("<img src=\"" + link + "\">\n");
 }
 
 std::string HtmlGenerator::insertImg(const std::string &link, const std::string &qualif) {
-    return std::string("<img " + qualif + " src=\"" + link + "\">");
+    return std::string("<img " + qualif + " src=\"" + link + "\">\n");
 }
 
-std::string HtmlGenerator::generateStyleCss(const std::string content[]) { //todo (style...)
-    return std::string();
+std::string HtmlGenerator::generateStyleCss(const std::string *content) {
+    std::string result("<style>\n");
+
+    for (int i = 0; i < content->size(); ++i) {
+        result += ' ' + content[i] + '\n';
+    }
+
+    result += "</style>\n";
+    return result;
 }

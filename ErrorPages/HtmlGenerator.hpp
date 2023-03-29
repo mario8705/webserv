@@ -46,7 +46,7 @@ public:
     std::string generateTableDesc(const std::string &text, const std::string &qualif);
     std::string insertImg(const std::string &link);
     std::string insertImg(const std::string &link, const std::string &qualif);
-    std::string generateStyleCss(const std::string content[]);
+    std::string generateStyleCss(const std::string *content);
 
 };
 
