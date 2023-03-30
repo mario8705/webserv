@@ -42,7 +42,7 @@ void SelectEventLoop::UnregisterEvent(IIOEvent *evt)
     }
 }
 
-void SelectEventLoop::Run()
+void SelectEventLoop::LoopOnce()
 {
     fd_set rdset, wrset;
     IIOEvent *evt;
@@ -54,43 +54,37 @@ void SelectEventLoop::Run()
     std::vector<IIOEvent *> writeEvents;
     size_t i;
 
-    while (1)
+    FD_ZERO(&rdset);
+    FD_ZERO(&wrset);
+    nfds = 0;
+    for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
     {
-        FD_ZERO(&rdset);
-        FD_ZERO(&wrset);
-        readEvents.clear();
-        writeEvents.clear();
+        fd = it->first;
+        evt = it->second;
 
-        nfds = 0;
-        for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
-        {
-            fd = it->first;
-            evt = it->second;
-
-            if (fd > nfds)
-                nfds = fd;
-            if (evt->IsReadable())
-                 FD_SET(fd, &rdset);
-            if (evt->IsWritable())
-                FD_SET(fd, &wrset);
-        }
-        n = select(nfds + 1, &rdset, &wrset, NULL, NULL);
-        if (n < 0)
-        {
-            return ;
-        }
-        for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
-        {
-            fd = it->first;
-            evt = it->second;
-            if (FD_ISSET(fd, &rdset))
-                readEvents.push_back(evt);
-            if (FD_ISSET(fd, &wrset))
-                writeEvents.push_back(evt);
-        }
-        for (i = 0; i < readEvents.size(); ++i)
-            readEvents[i]->HandleReadEvent();
-        for (i = 0; i < writeEvents.size(); ++i)
-            writeEvents[i]->HandleWriteEvent();
+        if (fd > nfds)
+            nfds = fd;
+        if (evt->IsReadable())
+             FD_SET(fd, &rdset);
+        if (evt->IsWritable())
+            FD_SET(fd, &wrset);
     }
+    n = select(nfds + 1, &rdset, &wrset, NULL, NULL);
+    if (n < 0)
+    {
+        return ;
+    }
+    for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
+    {
+        fd = it->first;
+        evt = it->second;
+        if (FD_ISSET(fd, &rdset))
+            readEvents.push_back(evt);
+        if (FD_ISSET(fd, &wrset))
+            writeEvents.push_back(evt);
+    }
+    for (i = 0; i < readEvents.size(); ++i)
+        readEvents[i]->NotifyRead();
+    for (i = 0; i < writeEvents.size(); ++i)
+        writeEvents[i]->NotifyWrite();
 }

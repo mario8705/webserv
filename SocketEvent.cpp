@@ -5,90 +5,69 @@
 #include "SocketEvent.h"
 #include <unistd.h>
 #include "DataBuffer.h"
-#include "ServerHost.h"
-#include "ProtocolCodec.h"
+#include "SocketEventHandler.h"
+#include "EventLoop.h"
 
-SocketEvent::SocketEvent(ServerHost *host, int fd)
-        : IOEventBase(fd), m_host(host)
+SocketEvent::SocketEvent(IEventLoop *eventLoop, ISocketEventHandler *handler, int fd)
+    : IOEventBase(fd), m_eventLoop(eventLoop), m_handler(handler)
 {
-    m_receiveBuffer = new DataBuffer;
+    m_inputBuffer = new DataBuffer;
     m_outputBuffer = new DataBuffer;
-    m_protocolCodec = new ProtocolCodec(this, m_receiveBuffer, m_outputBuffer);
-
-    m_cgi = false;
+    m_readEnabled = true;
+    m_writeEnabled = true;
+    m_eventLoop->RegisterEvent(this);
 }
 
 SocketEvent::~SocketEvent()
 {
-    delete m_protocolCodec;
-    delete m_receiveBuffer;
+    m_eventLoop->UnregisterEvent(this);
+    delete m_inputBuffer;
     delete m_outputBuffer;
     ::close(m_fd);
 }
 
-void SocketEvent::HandleReadEvent()
-{
+void SocketEvent::NotifyRead() {
     int n;
 
-    n = m_receiveBuffer->Receive(m_fd);
-    if (n <= 0)
-    {
-        m_host->Disconnect(this);
-    }
-    else
-    {
-        m_protocolCodec->ProcessData();
+    if ((n = m_inputBuffer->Receive(m_fd)) <= 0) {
+        if (0 == n)
+            m_handler->HandleEvent(kEventType_EOF);
+        else
+            m_handler->HandleEvent(kEventType_Error);
+    } else {
+        m_handler->HandleRead(m_inputBuffer);
     }
 }
 
-void SocketEvent::HandleWriteEvent()
-{
-    m_outputBuffer->Send(m_fd);
+void SocketEvent::NotifyWrite() {
+    int n;
 
-    if (m_outputBuffer->GetLength() == 0)
-        HandleOutputDrained();
+    if (m_outputBuffer->GetLength() > 0) {
+        if ((n = m_outputBuffer->Send(m_fd)) <= 0) {
+            if (0 == n)
+                m_handler->HandleEvent(kEventType_EOF);
+            else
+                m_handler->HandleEvent(kEventType_Error);
+        } else {
+            m_handler->HandleWrite(m_outputBuffer);
+        }
+    }
 }
 
 bool SocketEvent::IsReadable() const
 {
-    /* Limit the receive buffer size to 16KiB */
-    return m_receiveBuffer->GetLength() <= 16384;
+    return m_readEnabled && (m_inputBuffer->GetLength() < m_inputBuffer->GetReadHighWatermark());
 }
 
 bool SocketEvent::IsWritable() const
 {
-    return m_outputBuffer->GetLength() > 0;
+    return m_writeEnabled && (m_outputBuffer->GetLength() > 0);
 }
 
-void SocketEvent::HandleRequest(Request *request, Response *response)
-{
-    response->SetStatus(200);
-    response->SetStatusMessage("Ok");
-    response->SetExternal(true);
-
-    m_cgi = true;
-
-    //response->AddHeader("Content-Type", "text/html; charset=UTF-8");
-    //response->GetOutputBuffer()->PutString(request->GetRawPath());
+DataBuffer *SocketEvent::GetInputBuffer() const {
+    return m_inputBuffer;
 }
 
-void SocketEvent::HandleOutputDrained()
-{
-    pid_t p;
-    std::vector<std::string> args;
-
-    if (m_cgi)
-    {
-        p = ::fork();
-        if (p == 0) {
-            if (::dup2(m_fd, 1) < 0) {
-                /* TODO */
-            }
-            if (::execl("/usr/local/bin/php-cgi", "php-cgi", "index.php", NULL) < 0) {
-                perror("execl");
-            }
-            exit(1);
-        }
-        m_host->Disconnect(this);
-    }
+DataBuffer *SocketEvent::GetOutputBuffer() const {
+    return m_outputBuffer;
 }

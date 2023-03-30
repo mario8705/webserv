@@ -8,24 +8,27 @@
 #include <vector>
 
 class IEventLoop;
-class SocketEvent;
+class HttpClientHandler;
 
 class ServerHost : public IConnectionHandler
 {
 public:
-    typedef std::vector<SocketEvent *> tEventList;
+    typedef std::vector<HttpClientHandler *> tClientList;
 
     ServerHost(IEventLoop *eventLoop);
     ~ServerHost();
 
     void HandleConnection(int fd, struct sockaddr *addr, socklen_t addrlen);
-    void Disconnect(SocketEvent *event);
+    void DeferDeletion(HttpClientHandler *client);
+
+    void ProcessDeferredActions();
 
     IEventLoop *GetEventLoop() const;
 
 private:
     IEventLoop *m_eventLoop;
-    tEventList m_events;
+    tClientList m_clients;
+    tClientList m_disconnectedClients;
 };
 
 

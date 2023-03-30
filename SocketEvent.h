@@ -5,34 +5,35 @@
 #ifndef WEBSERV_SOCKETEVENT_H
 #define WEBSERV_SOCKETEVENT_H
 #include "IOEventBase.h"
-#include "RequestHandler.h"
 
-class ServerHost;
 class DataBuffer;
-class ProtocolCodec;
+class IEventLoop;
+class ISocketEventHandler;
 
-class SocketEvent : public IOEventBase, public IRequestHandler
+class SocketEvent : public IOEventBase
 {
 public:
-    SocketEvent(ServerHost *host, int fd);
-    virtual ~SocketEvent();
+    SocketEvent(IEventLoop *eventLoop, ISocketEventHandler *handler, int fd);
+    ~SocketEvent();
 
-    void HandleReadEvent();
-    void HandleWriteEvent();
+    void NotifyRead();
+    void NotifyWrite();
 
     bool IsReadable() const;
     bool IsWritable() const;
 
-    void HandleRequest(Request *request, Response *response);
+
+
+    DataBuffer *GetInputBuffer() const;
+    DataBuffer *GetOutputBuffer() const;
 
 protected:
-    void HandleOutputDrained();
-
-    ServerHost *m_host;
-    DataBuffer *m_receiveBuffer;
+    IEventLoop *m_eventLoop;
+    ISocketEventHandler *m_handler;
+    DataBuffer *m_inputBuffer;
     DataBuffer *m_outputBuffer;
-    ProtocolCodec *m_protocolCodec;
-    bool m_cgi;
+    bool m_readEnabled;
+    bool m_writeEnabled;
 };
 
 #endif //WEBSERV_SOCKETEVENT_H

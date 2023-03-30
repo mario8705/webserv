@@ -11,13 +11,13 @@ class IOEventBase : public IIOEvent
 public:
     virtual ~IOEventBase();
 
-    virtual void HandleReadEvent();
-    virtual void HandleWriteEvent();
+    void NotifyRead();
+    void NotifyWrite();
 
-    virtual bool IsReadable() const;
-    virtual bool IsWritable() const;
+    bool IsReadable() const;
+    bool IsWritable() const;
 
-    virtual int GetFileDescriptor() const;
+    int GetFileDescriptor() const;
 
 protected:
     explicit IOEventBase(int fd);

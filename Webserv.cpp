@@ -18,6 +18,7 @@
 Webserv::Webserv()
 {
     m_eventLoop = new SelectEventLoop;
+    m_running = false;
 }
 
 Webserv::~Webserv()
@@ -36,7 +37,12 @@ bool Webserv::CreateServer(NetworkAddress4 addr)
     sin.sin_addr.s_addr = addr.GetAddress();
     sin.sin_port = htons(port);
 
-    listener = ListenerEvent::CreateAndBind(new ServerHost(m_eventLoop),
+    ServerHost *host;
+
+    host = new ServerHost(m_eventLoop);
+
+    m_hosts.push_back(host);
+    listener = ListenerEvent::CreateAndBind(host,
                                             (struct sockaddr *) &sin,
                                             sizeof(sin),
                                             10);
@@ -46,7 +52,20 @@ bool Webserv::CreateServer(NetworkAddress4 addr)
     return false;
 }
 
-void Webserv::Run()
-{
-    m_eventLoop->Run();
+void Webserv::Run() {
+    tHostList::iterator it;
+    ServerHost *host;
+
+    m_running = true;
+    while (IsRunning()) {
+        m_eventLoop->LoopOnce();
+        for (it = m_hosts.begin(); it != m_hosts.end(); ++it) {
+            host = *it;
+            host->ProcessDeferredActions();
+        }
+    }
+}
+
+bool Webserv::IsRunning() const {
+    return m_running;
 }

@@ -12,11 +12,11 @@ class IConnectionHandler;
 class ListenerEvent : public IOEventBase
 {
 public:
-    virtual ~ListenerEvent();
+    ~ListenerEvent();
 
-    virtual void HandleReadEvent();
+    void NotifyRead();
 
-    virtual bool IsReadable() const;
+    bool IsReadable() const;
 
     static ListenerEvent *
     CreateAndBind(IConnectionHandler *handler, struct sockaddr *addr, socklen_t addrlen, int backlog);

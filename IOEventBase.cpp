@@ -8,11 +8,11 @@ IOEventBase::~IOEventBase()
 {
 }
 
-void IOEventBase::HandleReadEvent()
+void IOEventBase::NotifyRead()
 {
 }
 
-void IOEventBase::HandleWriteEvent()
+void IOEventBase::NotifyWrite()
 {
 }
 

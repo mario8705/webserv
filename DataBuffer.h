@@ -59,12 +59,16 @@ public:
 
     int Send(int fd);
 
-    size_t GetLength() const { return m_length; }
+    size_t GetLength() const;
+
+    void SetReadHighWatermark(uint32_t watermark);
+    uint32_t GetReadHighWatermark() const;
 
 private:
     BufferChain *NewMemorySegment(size_t minCapacity);
 
     size_t m_length;
+    uint32_t m_readHighWatermark;
     tChainList m_chains;
     tChainList m_freeChains;
 };

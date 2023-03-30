@@ -11,6 +11,7 @@
 DataBuffer::DataBuffer()
 {
     m_length = 0;
+    m_readHighWatermark = 0xFFFFFFFF;
 }
 
 DataBuffer::~DataBuffer()
@@ -80,6 +81,7 @@ int DataBuffer::Receive(int fd)
 {
     BufferChain *chain;
     ssize_t n;
+    size_t avail;
 
     chain = NULL;
     if (m_chains.size() > 0)
@@ -90,13 +92,16 @@ int DataBuffer::Receive(int fd)
     }
     if (!chain)
         chain = NewMemorySegment(4096);
-    n = recv(fd, chain->m_buffer + chain->m_offset, chain->GetFreeSpace(), 0);
-    printf("Chain : %d\n", chain->GetFreeSpace());
-    if (n <= 0)
-        return n;
-    chain->m_offset += n;
-    m_length += n;
-    return n;
+    avail = m_readHighWatermark - m_length;
+    if (avail > chain->GetFreeSpace())
+        avail = chain->GetFreeSpace();
+    n = recv(fd, chain->m_buffer + chain->m_offset, avail, 0);
+    printf("Chain : %lu\n", avail);
+    if (n > 0) {
+        chain->m_offset += n;
+        m_length += n;
+    }
+    return static_cast<int>(n);
 }
 
 BufferChain *DataBuffer::NewMemorySegment(size_t minCapacity)
@@ -302,4 +307,16 @@ void DataBuffer::AddBuffer(DataBuffer *buffer)
     }
     buffer->m_length = 0;
     buffer->m_chains.clear();
+}
+
+size_t DataBuffer::GetLength() const {
+    return m_length;
+}
+
+void DataBuffer::SetReadHighWatermark(uint32_t watermark) {
+    m_readHighWatermark = watermark;
+}
+
+uint32_t DataBuffer::GetReadHighWatermark() const {
+    return m_readHighWatermark;
 }

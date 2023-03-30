@@ -8,12 +8,17 @@
 #include <netinet/in.h>
 #include "ConnectionHandler.h"
 
+ListenerEvent::ListenerEvent(IConnectionHandler *handler, int fd)
+        : IOEventBase(fd), m_handler(handler)
+{
+}
+
 ListenerEvent::~ListenerEvent()
 {
     ::close(m_fd);
 }
 
-void ListenerEvent::HandleReadEvent()
+void ListenerEvent::NotifyRead()
 {
     struct sockaddr addr;
     socklen_t addrlen;
@@ -70,11 +75,6 @@ ListenerEvent *ListenerEvent::CreateAndBind(IConnectionHandler *handler, struct 
     fail:
     close(fd);
     return NULL;
-}
-
-ListenerEvent::ListenerEvent(IConnectionHandler *handler, int fd)
-    : IOEventBase(fd), m_handler(handler)
-{
 }
 
 bool ListenerEvent::IsReadable() const

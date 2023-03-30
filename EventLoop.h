@@ -15,7 +15,7 @@ public:
     virtual void RegisterEvent(IIOEvent *evt) = 0;
     virtual void UnregisterEvent(IIOEvent *evt) = 0;
 
-    virtual void Run() = 0;
+    virtual void LoopOnce() = 0;
 };
 
 

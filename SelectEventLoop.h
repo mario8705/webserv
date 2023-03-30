@@ -13,12 +13,12 @@ public:
     typedef std::map<int, IIOEvent *> tEventMap;
 
     SelectEventLoop();
-    virtual ~SelectEventLoop();
+    ~SelectEventLoop();
 
-    virtual void RegisterEvent(IIOEvent *evt);
-    virtual void UnregisterEvent(IIOEvent *evt);
+    void RegisterEvent(IIOEvent *evt);
+    void UnregisterEvent(IIOEvent *evt);
     
-    virtual void Run();
+    void LoopOnce();
 
 private:
     tEventMap m_eventMap;

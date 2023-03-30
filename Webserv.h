@@ -15,6 +15,8 @@ class ServerHost;
 class Webserv
 {
 public:
+    typedef std::vector<ServerHost *> tHostList;
+
     Webserv();
     ~Webserv();
 
@@ -22,10 +24,14 @@ public:
 
     void Run();
 
+    bool IsRunning() const;
+
 private:
     IEventLoop *m_eventLoop;
     std::vector<ListenerEvent *> m_listeners;
-    std::map<NetworkAddress4, ServerHost *> m_hosts;
+    tHostList m_hosts;
+//    std::map<NetworkAddress4, ServerHost *> m_hosts;
+    volatile bool m_running;
 };
 
 
