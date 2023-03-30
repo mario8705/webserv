@@ -4,7 +4,7 @@
 
 #ifndef WEBSERV_HTTPCLIENTHANDLER_H
 #define WEBSERV_HTTPCLIENTHANDLER_H
-#include "SocketEventHandler.h"
+#include "../Network/SocketEventHandler.h"
 #include <string>
 
 class ServerHost;

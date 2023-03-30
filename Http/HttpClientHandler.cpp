@@ -3,10 +3,10 @@
 //
 
 #include "HttpClientHandler.h"
-#include "SocketEvent.h"
-#include "ServerHost.h"
-#include "DataBuffer.h"
-#include "HttpMethod.h"
+#include "../Network/SocketEvent.h"
+#include "../ServerHost.h"
+#include "../IO/DataBuffer.h"
+#include "../Http/HttpMethod.h"
 
 namespace Http
 {

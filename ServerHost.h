@@ -4,7 +4,7 @@
 
 #ifndef WEBSERV_SERVERHOST_H
 #define WEBSERV_SERVERHOST_H
-#include "ConnectionHandler.h"
+#include "Network/ConnectionHandler.h"
 #include <vector>
 
 class IEventLoop;

@@ -6,7 +6,7 @@
 #define WEBSERV_WEBSERV_H
 #include <vector>
 #include <map>
-#include "NetworkAddress4.h"
+#include "Network/NetworkAddress4.h"
 
 class IEventLoop;
 class ListenerEvent;

@@ -4,8 +4,8 @@
 
 #include "ServerHost.h"
 #include <unistd.h>
-#include "EventLoop.h"
-#include "HttpClientHandler.h"
+#include "IO/EventLoop.h"
+#include "Http/HttpClientHandler.h"
 
 int fd_set_non_blocking(int fd);
 

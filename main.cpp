@@ -1,4 +1,4 @@
-#include <signal.h>
+#include <csignal>
 #include "Webserv.h"
 
 int main(int argc, char *argv[])

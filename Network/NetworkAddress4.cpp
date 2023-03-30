@@ -9,6 +9,11 @@ NetworkAddress4::NetworkAddress4(uint16_t port)
 {
 }
 
+NetworkAddress4::NetworkAddress4(uint32_t address, uint16_t port)
+    : m_address(address), m_port(port)
+{
+}
+
 NetworkAddress4::NetworkAddress4(const NetworkAddress4 &other)
     : m_address(other.m_address), m_port(other.m_port)
 {
@@ -38,4 +43,12 @@ uint32_t NetworkAddress4::GetAddress() const
 uint16_t NetworkAddress4::GetPort() const
 {
     return m_port;
+}
+
+NetworkAddress4 NetworkAddress4::Parse(const std::string &address, uint16_t port) {
+    uint32_t addr;
+
+    addr = 0; /* TODO */
+
+    return NetworkAddress4(addr, port);
 }
