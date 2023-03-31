@@ -28,7 +28,7 @@ public :
     Config();
     ~Config();
     std::vector<std::string> getConfig();
-    std::vector<Server> getServConfig();
+    std::vector<Server *> getServConfig();
 
     /*Tokenization process make _config*/
     void makeConfig();
@@ -42,6 +42,6 @@ public :
 
 private:
     std::vector<std::string> _config;
-    std::vector<Server> _servconfig;
+    std::vector<Server *> _servconfig;
 };
 

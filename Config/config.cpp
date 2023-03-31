@@ -15,6 +15,9 @@ Server::Server(std::vector<std::string> content) : _serverconfig(content)
 }
 
 Config::~Config() {
+    for (size_t i = 0; i < _servconfig.size(); i++) {
+        delete _servconfig[i];
+    }
     std::cout << "config destructor\n";
 }
 
@@ -26,7 +29,7 @@ std::vector<std::string> Config::getConfig() {return(_config);}
 std::vector<std::string> Server::getServConfig() {return(_serverconfig);}
 std::string Server::getServConfigIndex(size_t index) {return(_serverconfig[index]);}
 
-std::vector<Server> Config::getServConfig() {return(_servconfig);}
+std::vector<Server *> Config::getServConfig() {return(_servconfig);}
 
 std::vector<std::string>	split_with_space(std::string line)
 {
@@ -131,8 +134,10 @@ void Config::split_serv(std::vector<std::string> args)
                 final.push_back(args[i]);
                 i++;
             }
-            _servconfig.push_back(final);
-            std::cout << "End of Server\n\n";
+            //_servconfig.push_back(final);
+            Server* new_server = new Server(final);
+            _servconfig.push_back(new_server);
+            //std::cout << "End of Server\n\n";
             final.clear();
         }
         else
@@ -145,15 +150,19 @@ int main()
 {
     std::vector<std::string> infile;
     std::vector<std::string> final;
-    std::vector<Server> servers;
+    std::vector<Server*> servers;
     Config config;
     config.makeConfig();
     final = config.getConfig();
     config.split_serv(final);
     servers = config.getServConfig();
-    for (size_t i = 0; i < servers[0].getServConfig().size(); i++)
+    for (size_t i = 0; i < servers.size(); i++)
 {
-    std::cout << servers[0].getServConfigIndex(i);
+        for (size_t j = 0; j < servers[i]->getServConfig().size(); j++)
+        {
+            std::cout << servers[i]->getServConfigIndex(j);
+        }
+        std::cout << "END SERV\n\n";
 }
     //config conf(infile);
 }
