@@ -17,7 +17,7 @@ public:
     ~CssGenerator();
     CssGenerator &operator=(const CssGenerator &toAssign);
 
-    std::map<std::string, std::string> generateCssBlocs(const std::string *blocs);
+    std::string generateCssBlocs(std::vector<std::string> blocs);
     std::string generateBloc(const std::string &blocName, std::map<std::string, std::vector<std::string>> &content);
 
 };

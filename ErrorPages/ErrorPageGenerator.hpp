@@ -6,8 +6,9 @@
 #define ERRORPAGEGENERATOR_HPP
 
 #include "HtmlGenerator.hpp"
+#include "CssGenerator.hpp"
 
-class ErrorPageGenerator: public HtmlGenerator
+class ErrorPageGenerator: public HtmlGenerator, public CssGenerator
 {
 private:
 	int errorCode;

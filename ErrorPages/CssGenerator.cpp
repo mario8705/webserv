@@ -18,9 +18,16 @@ CssGenerator &CssGenerator::operator=(const CssGenerator &toAssign) {
     return *this;
 }
 
-std::map<std::string, std::string> CssGenerator::generateCssBlocs(const std::string *blocs) {
+std::string CssGenerator::generateCssBlocs(std::vector<std::string> blocs) {
 
-    return nullptr;
+    std::vector<std::string>::iterator itBlocs = blocs.begin();
+    std::string result;
+
+    for (; itBlocs != blocs.end() ; ++itBlocs) {
+        result+= *itBlocs + '\n';
+    }
+
+    return result;
 }
 
 std::string CssGenerator::generateBloc(const std::string &blocName, std::map<std::string, std::vector<std::string>> &content) {
