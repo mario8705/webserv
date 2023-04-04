@@ -13,20 +13,24 @@
 
 class CgiManager {
 
-    const std::string knownCgi[3] = {"python-cgi.py", "php-cgi", "cpp-cgi"};
+    //const std::string knownCgi[3] = {"python-cgi.py", "php-cgi", "cpp-cgi"};
     std::string cgiResponse;
     std::map<std::string, std::string> serVarMap;
 
-public:
-    CgiManager();
-    CgiManager(std::string cgiToExecute, char **env,
-               std::map<std::string, std::string> &ServerVariablesMap);
-    CgiManager(const CgiManager &copy);
-    ~CgiManager();
-    CgiManager &operator=(const CgiManager &toAssign);
+	void convertCgiFileToCgiResponse(const std::string &cgiFileName);
 
-    void execute(std::string cgiName, char **env);
-    void sendEnvVarsToCgi();
+public:
+
+	CgiManager();
+	CgiManager(std::string cgiToExecute, char **env,
+               std::map<std::string, std::string> &ServerVariablesMap);
+	CgiManager(const CgiManager &copy);
+	~CgiManager();
+	CgiManager &operator=(const CgiManager &toAssign);
+    void execute(const std::string& cgiName, char **env);
+
+	void sendEnvVarsToCgi();
+	const std::string &getCgiResponse() const;
 };
 
 
