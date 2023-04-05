@@ -18,7 +18,7 @@ public:
     void RegisterEvent(IIOEvent *evt);
     void UnregisterEvent(IIOEvent *evt);
     
-    void LoopOnce();
+    bool LoopOnce();
 
 private:
     tEventMap m_eventMap;

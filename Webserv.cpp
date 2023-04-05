@@ -58,12 +58,14 @@ void Webserv::Run() {
 
     m_running = true;
     while (IsRunning()) {
-        m_eventLoop->LoopOnce();
         for (it = m_hosts.begin(); it != m_hosts.end(); ++it) {
             host = *it;
             host->ProcessDeferredActions();
         }
+        if (m_eventLoop->LoopOnce())
+            break ;
     }
+    printf("Shutting down...\n"); /* TODO */
 }
 
 bool Webserv::IsRunning() const {

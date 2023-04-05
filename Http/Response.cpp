@@ -4,6 +4,7 @@
 
 #include "Response.h"
 #include "../IO/DataBuffer.h"
+#include "HttpStatusCode.h"
 
 Response::Response()
 {
@@ -13,16 +14,6 @@ Response::Response()
 Response::~Response()
 {
     delete m_outputBuffer;
-}
-
-void Response::SetStatus(int status)
-{
-    m_status = status;
-}
-
-int Response::GetStatus() const
-{
-    return m_status;
 }
 
 void Response::SetStatusMessage(std::string message)
@@ -63,4 +54,17 @@ void Response::SetExternal(bool external)
 bool Response::IsExternal() const
 {
     return m_external;
+}
+
+void Response::SetStatus(const HttpStatusCode &status) {
+    m_message = status.GetStatusMessage();
+    m_status = status.GetStatusCode();
+}
+
+int Response::GetStatusCode() const {
+    return m_status;
+}
+
+void Response::SetStatusCode(int status) {
+    m_status = status;
 }

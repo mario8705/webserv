@@ -4,7 +4,8 @@
 
 #include "Request.h"
 
-Request::Request()
+Request::Request(tHttpHeaders &headers)
+    : m_headers(headers)
 {
 }
 
@@ -20,4 +21,8 @@ HttpMethod Request::GetMethod() const
 std::string Request::GetRawPath() const
 {
     return m_rawPath;
+}
+
+const Request::tHttpHeaders &Request::GetHeaders() const {
+    return m_headers;
 }

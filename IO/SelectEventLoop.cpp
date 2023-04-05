@@ -37,12 +37,11 @@ void SelectEventLoop::UnregisterEvent(IIOEvent *evt)
     it = m_eventMap.find(evt->GetFileDescriptor());
     if (it != m_eventMap.end())
     {
-        printf("UnregisterEvent(%p)\n", evt);
         m_eventMap.erase(it);
     }
 }
 
-void SelectEventLoop::LoopOnce()
+bool SelectEventLoop::LoopOnce()
 {
     fd_set rdset, wrset;
     IIOEvent *evt;
@@ -72,7 +71,7 @@ void SelectEventLoop::LoopOnce()
     n = select(nfds + 1, &rdset, &wrset, NULL, NULL);
     if (n < 0)
     {
-        return ;
+        return true;
     }
     for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
     {
@@ -87,4 +86,5 @@ void SelectEventLoop::LoopOnce()
         readEvents[i]->NotifyRead();
     for (i = 0; i < writeEvents.size(); ++i)
         writeEvents[i]->NotifyWrite();
+    return false;
 }

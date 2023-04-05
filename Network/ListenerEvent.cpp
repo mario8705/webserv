@@ -20,15 +20,17 @@ ListenerEvent::~ListenerEvent()
 
 void ListenerEvent::NotifyRead()
 {
-    struct sockaddr addr;
+    char addrbuf[SOCK_MAXADDRLEN];
+    sockaddr *addr;
     socklen_t addrlen;
     int fd;
 
-    addrlen = sizeof(addr);
-    fd = accept(m_fd, &addr, &addrlen);
+    addr = reinterpret_cast<sockaddr *>(addrbuf);
+    addrlen = sizeof(addrbuf);
+    fd = accept(m_fd, addr, &addrlen);
     if (fd >= 0)
     {
-        m_handler->HandleConnection(fd, &addr, addrlen);
+        m_handler->HandleConnection(fd, addr, addrlen);
     }
 }
 
@@ -72,7 +74,7 @@ ListenerEvent *ListenerEvent::CreateAndBind(IConnectionHandler *handler, struct 
     }
     return new ListenerEvent(handler, fd);
 
-    fail:
+fail:
     close(fd);
     return NULL;
 }

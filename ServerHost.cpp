@@ -28,7 +28,6 @@ void ServerHost::HandleConnection(int fd, struct sockaddr *addr, socklen_t addrl
         return ;
     }
 
-    printf("New connection :D\n");
     client = new HttpClientHandler(this, fd);
 
     m_clients.push_back(client);

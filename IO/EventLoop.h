@@ -15,7 +15,11 @@ public:
     virtual void RegisterEvent(IIOEvent *evt) = 0;
     virtual void UnregisterEvent(IIOEvent *evt) = 0;
 
-    virtual void LoopOnce() = 0;
+    /**
+     * Block until at least one event occured or a signal interrupts the handler.
+     * @return true if an error occured (including a caught signal)
+     */
+    virtual bool LoopOnce() = 0;
 };
 
 

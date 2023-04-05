@@ -298,13 +298,8 @@ int DataBuffer::AddFile(int fd, size_t offset, size_t length)
 
 void DataBuffer::AddBuffer(DataBuffer *buffer)
 {
-    tChainList::iterator it;
-
     m_length += buffer->m_length;
-    for (it = buffer->m_chains.begin(); it != buffer->m_chains.end(); ++it)
-    {
-        m_chains.push_back(*it);
-    }
+    m_chains.insert(m_chains.end(), buffer->m_chains.begin(), buffer->m_chains.end());
     buffer->m_length = 0;
     buffer->m_chains.clear();
 }

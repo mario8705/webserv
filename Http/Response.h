@@ -8,6 +8,7 @@
 #include <map>
 
 class DataBuffer;
+class HttpStatusCode;
 
 class Response
 {
@@ -16,8 +17,10 @@ public:
 
     virtual ~Response();
 
-    int GetStatus() const;
-    void SetStatus(int status);
+    void SetStatus(const HttpStatusCode &status);
+
+    int GetStatusCode() const;
+    void SetStatusCode(int status);
 
     std::string GetStatusMessage() const;
     void SetStatusMessage(std::string message);
