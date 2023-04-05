@@ -23,20 +23,11 @@ int main()
         std::cout << ch << std::endl;
         if (ch == ';')
         {
-            if (line.size() > 1)
-            {
-                file.unget();
-                std::cout << "1";
-                tokens.push_back(new Token(line, ident));
-                line.clear();
-            }
-            else
-            {
-                std::cout << "2";
-                tokens.push_back(new Token(";", semicolon));
-                file.get();
-                line.clear();
-            }
+            tokens.push_back(new Token(line, ident));
+            line.clear();
+            tokens.push_back(new Token(";", semicolon));
+            file.get(ch);
+
         }
         else if (isspace(ch))
         {
@@ -46,7 +37,7 @@ int main()
             while (isspace(ch))
                 file.get(ch);
         }
-        if (ch != ';')
+        if (ch != ';' && ch != '\n')
             line += ch;
     }
     for (size_t i = 0; i < tokens.size(); i++)
