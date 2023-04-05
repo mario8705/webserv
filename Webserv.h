@@ -11,11 +11,13 @@
 class IEventLoop;
 class ListenerEvent;
 class ServerHost;
+class VirtualHost;
 
 class Webserv
 {
 public:
     typedef std::vector<ServerHost *> tHostList;
+    typedef std::vector<VirtualHost *> tVirtualHostList;
 
     Webserv();
     ~Webserv();
@@ -30,6 +32,7 @@ private:
     IEventLoop *m_eventLoop;
     std::vector<ListenerEvent *> m_listeners;
     tHostList m_hosts;
+    tVirtualHostList m_virtualHosts;
 //    std::map<NetworkAddress4, ServerHost *> m_hosts;
     volatile bool m_running;
 };

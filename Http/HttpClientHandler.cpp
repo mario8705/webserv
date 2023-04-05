@@ -61,12 +61,8 @@ static inline std::ostream &operator<<(std::ostream &os, HttpMethod method)
 
 void HttpClientHandler::HandleRequest(Request *request, Response *response)
 {
-    std::cout << "Method: " << request->GetMethod() << std::endl;
-    std::cout << "Path: " << request->GetRawPath() << std::endl;
+    m_host->HandleRequest(request, response);
 
-    response->GetOutputBuffer()->PutString("<h1>Hello, World !</h1>");
-
-    response->SetStatus(HttpStatusCode::NotFound);
     response->AddHeader("Content-Type", "text/html");
     response->AddHeader("Content-Length", std::to_string(response->GetOutputBuffer()->GetLength())); /* TODO warning C++11 */
 

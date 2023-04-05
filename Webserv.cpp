@@ -6,6 +6,7 @@
 #include "IO/SelectEventLoop.h"
 #include "Network/ListenerEvent.h"
 #include "ServerHost.h"
+#include "VirtualHost.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -23,6 +24,15 @@ Webserv::Webserv()
 
 Webserv::~Webserv()
 {
+    tVirtualHostList::const_iterator it;
+
+    for (it = m_virtualHosts.begin(); it != m_virtualHosts.end(); ++it)
+    {
+        delete *it;
+    }
+
+    /* TODO free all ServerHost */
+
     delete m_eventLoop;
 }
 
@@ -31,15 +41,26 @@ bool Webserv::CreateServer(NetworkAddress4 addr)
     struct sockaddr_in sin;
     uint16_t port;
     ListenerEvent *listener;
+    ServerHost *host;
 
     port = addr.GetPort();
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = addr.GetAddress();
     sin.sin_port = htons(port);
 
-    ServerHost *host;
-
     host = new ServerHost(m_eventLoop);
+
+    VirtualHost *vhost1 = new VirtualHost;
+    vhost1->m_serverNames.push_back("localhost");
+
+    VirtualHost *vhost2 = new VirtualHost;
+    vhost2->m_serverNames.push_back("127.0.0.1");
+
+    host->AddVirtualHost(vhost1);
+    host->AddVirtualHost(vhost2);
+
+    m_virtualHosts.push_back(vhost1);
+    m_virtualHosts.push_back(vhost2);
 
     m_hosts.push_back(host);
     listener = ListenerEvent::CreateAndBind(host,
