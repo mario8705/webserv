@@ -12,7 +12,7 @@
 #include <fstream>
 
 
-enum type {
+enum TokenType {
     ident,
     openbracket,
     closebracket,
@@ -21,13 +21,14 @@ enum type {
 };
 class Token {
 public:
-    Token(std::string token, type tokentype);
+    Token(std::string token, TokenType tokentype);
     ~Token();
-    std::string getType();
+    TokenType getType();
+    std::string getTypeString();
     std::string getToken();
 
 
 private:
-    type _tokenType;
+    TokenType _tokenType;
     std::string _Token;
 };
