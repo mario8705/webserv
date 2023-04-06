@@ -9,6 +9,8 @@
 #include "HttpMethod.h"
 #include "HttpVersion.h"
 
+class HttpProtocolCodec;
+
 class Request
 {
 public:
@@ -21,12 +23,15 @@ public:
 
     const tHttpHeaders &GetHeaders() const;
 
+    HttpProtocolCodec *GetHttpCodec() const;
+
 protected:
     explicit Request(tHttpHeaders &headers);
 
     HttpMethod m_method;
     std::string m_rawPath;
     tHttpHeaders &m_headers;
+    HttpProtocolCodec *m_codec;
 };
 
 

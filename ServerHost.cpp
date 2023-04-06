@@ -11,6 +11,7 @@
 #include "Http/HttpStatusCode.h"
 #include "Http/HttpClientHandler.h"
 #include "VirtualHost.h"
+#include "string_utils.hpp"
 
 int fd_set_non_blocking(int fd);
 
@@ -97,22 +98,8 @@ void ServerHost::HandleRequest(Request *request, Response *response)
     {
         /* TODO throw a 404 */
         response->SetStatus(HttpStatusCode::NotFound);
-        response->GetOutputBuffer()->PutString("<center><h1>404 Not Found :(</h1></center>");
+      //  response->GetOutputBuffer()->PutString("<center><h1>404 Not Found :(</h1></center>");
     }
-}
-
-/* TODO move to string_utils.hpp along with ltrim, rtrim and trim */
-template <typename _CharT>
-static inline std::basic_string<_CharT> &to_lower(std::basic_string<_CharT> &s)
-{
-    size_t i;
-    typename std::basic_string<_CharT>::iterator it;
-
-    for (it = s.begin(); it != s.end(); ++it)
-    {
-        *it = std::tolower(*it);
-    }
-    return s;
 }
 
 VirtualHost *ServerHost::MatchVirtualHost(std::string host)
@@ -128,7 +115,7 @@ VirtualHost *ServerHost::MatchVirtualHost(std::string host)
         } else {
             host.swap(serverName);
         }
-        to_lower(serverName);
+        utils::to_lower(serverName);
 
         it = m_virtualHostNames.find(serverName);
         if (it != m_virtualHostNames.end())

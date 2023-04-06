@@ -4,15 +4,15 @@
 
 #ifndef WEBSERV_HTTPCLIENTHANDLER_H
 #define WEBSERV_HTTPCLIENTHANDLER_H
-#include "../Network/SocketEventHandler.h"
+#include "../IO/BufferEventHandler.h"
 #include "RequestHandler.h"
 #include <string>
 
 class ServerHost;
-class SocketEvent;
+class BufferEvent;
 class HttpProtocolCodec;
 
-class HttpClientHandler : public ISocketEventHandler, public IRequestHandler
+class HttpClientHandler : public IBufferEventHandler, public IRequestHandler
 {
 public:
     HttpClientHandler(ServerHost *host, int fd);
@@ -26,9 +26,11 @@ public:
 
     void Disconnect(bool flush);
 
+    BufferEvent *GetBufferEvent() const;
+
 private:
     ServerHost *m_host;
-    SocketEvent *m_event;
+    BufferEvent *m_event;
     HttpProtocolCodec *m_protocolCodec;
     bool m_disconnecting;
 };

@@ -51,13 +51,13 @@ public:
     bool Readln(std::string &line);
 
     /**
-     * Receive data from fd and put it into the buffer.
+     * Read data from the fd and put it into the buffer.
      * @param fd
      * @return The number of bytes received.
      */
-    int Receive(int fd);
+    int Read(int fd);
 
-    int Send(int fd);
+    int Write(int fd);
 
     size_t GetLength() const;
 

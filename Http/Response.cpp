@@ -8,12 +8,14 @@
 
 Response::Response()
 {
-    m_outputBuffer = new DataBuffer;
+    m_asyncHandler = NULL;
+    m_contentLength = 0;
+    m_chunked = false;
+    SetStatus(HttpStatusCode::Ok);
 }
 
 Response::~Response()
 {
-    delete m_outputBuffer;
 }
 
 void Response::SetStatusMessage(std::string message)
@@ -41,21 +43,6 @@ void Response::AddHeader(std::string key, std::string value)
     m_headers.insert(std::make_pair(key, value));
 }
 
-DataBuffer *Response::GetOutputBuffer() const
-{
-    return m_outputBuffer;
-}
-
-void Response::SetExternal(bool external)
-{
-    m_external = external;
-}
-
-bool Response::IsExternal() const
-{
-    return m_external;
-}
-
 void Response::SetStatus(const HttpStatusCode &status) {
     m_message = status.GetStatusMessage();
     m_status = status.GetStatusCode();
@@ -67,4 +54,35 @@ int Response::GetStatusCode() const {
 
 void Response::SetStatusCode(int status) {
     m_status = status;
+}
+
+void Response::SetAsyncHandler(IAsyncRequestHandler *asyncHandler)
+{
+    m_asyncHandler = asyncHandler;
+}
+
+IAsyncRequestHandler *Response::GetAsyncHandler() const
+{
+    return m_asyncHandler;
+}
+
+HttpProtocolCodec *Response::GetHttpCodec() const
+{
+    return m_codec;
+}
+
+void Response::SetContentLength(size_t length) {
+    m_contentLength = length;
+}
+
+size_t Response::GetContentLength() const {
+    return m_contentLength;
+}
+
+void Response::SetChunked(bool chunked) {
+    m_chunked = chunked;
+}
+
+bool Response::IsChunked() const {
+    return m_chunked;
 }

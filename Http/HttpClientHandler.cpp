@@ -3,7 +3,7 @@
 //
 
 #include "HttpClientHandler.h"
-#include "../Network/SocketEvent.h"
+#include "../IO/BufferEvent.h"
 #include "../ServerHost.h"
 #include "../IO/DataBuffer.h"
 #include "HttpProtocolCodec.h"
@@ -12,9 +12,10 @@
 HttpClientHandler::HttpClientHandler(ServerHost *host, int fd)
     : m_host(host), m_disconnecting(false)
 {
-    m_event = new SocketEvent(host->GetEventLoop(), this, fd);
+    m_event = new BufferEvent(host->GetEventLoop(), this, fd);
     m_event->GetInputBuffer()->SetReadHighWatermark(16384);
-    m_protocolCodec = new HttpProtocolCodec(this);
+    m_event->Enable(kEvent_Read | kEvent_Write);
+    m_protocolCodec = new HttpProtocolCodec(this, m_event->GetInputBuffer(), m_event->GetOutputBuffer());
 }
 
 HttpClientHandler::~HttpClientHandler()
@@ -25,7 +26,7 @@ HttpClientHandler::~HttpClientHandler()
 
 void HttpClientHandler::HandleRead(DataBuffer *buffer)
 {
-    m_protocolCodec->ProcessDataInput(buffer);
+    m_protocolCodec->ProcessDataInput();
 }
 
 void HttpClientHandler::HandleWrite(DataBuffer *buffer)
@@ -43,30 +44,19 @@ void HttpClientHandler::HandleEvent(EventType type)
 
 void HttpClientHandler::Disconnect(bool flush) {
     m_disconnecting = true;
+    m_event->Enable(kEvent_Write);
     if (!flush || m_event->GetOutputBuffer()->GetLength() == 0) {
         m_host->DeferDeletion(this);
     }
 }
 
-#include <iostream>
-#include "Request.h"
-#include "Response.h"
-
-static inline std::ostream &operator<<(std::ostream &os, HttpMethod method)
-{
-    static std::string kMethodsList[] = { "GET", "POST", "PUT" };
-    os << kMethodsList[method];
-    return os;
-}
-
 void HttpClientHandler::HandleRequest(Request *request, Response *response)
 {
     m_host->HandleRequest(request, response);
+}
 
-    response->AddHeader("Content-Type", "text/html");
-    response->AddHeader("Content-Length", std::to_string(response->GetOutputBuffer()->GetLength())); /* TODO warning C++11 */
-
-    m_protocolCodec->EncodeResponse(m_event->GetOutputBuffer(), response);
-    m_protocolCodec->FinalizeResponse();
+BufferEvent *HttpClientHandler::GetBufferEvent() const
+{
+    return m_event;
 }
 

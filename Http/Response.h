@@ -9,6 +9,14 @@
 
 class DataBuffer;
 class HttpStatusCode;
+class IAsyncRequestHandler;
+class HttpProtocolCodec;
+
+enum HttpTransferEncoding
+{
+    kTransferEncoding_Chunked,
+    kTransferEncoding_Stream,
+};
 
 class Response
 {
@@ -29,24 +37,30 @@ public:
     tHttpHeadersMap &GetHeaders();
     void AddHeader(std::string key, std::string value);
 
-    DataBuffer *GetOutputBuffer() const;
+    void SetAsyncHandler(IAsyncRequestHandler *asyncHandler);
+    IAsyncRequestHandler *GetAsyncHandler() const;
 
-    /**
-     * Detach the request from the server, to be handled by an external program (CGI).
-     * When this flag is enabled, only the http response and some headers are written
-     * @param external
-     */
-    void SetExternal(bool external);
-    bool IsExternal() const;
+    HttpProtocolCodec *GetHttpCodec() const;
+
+    void SetContentLength(size_t length);
+    size_t GetContentLength() const;
+
+    void SetChunked(bool chunked);
+    bool IsChunked() const;
+
+    virtual int Write(const void *data, size_t n) = 0;
+    virtual void End() = 0;
 
 protected:
     Response();
 
+    HttpProtocolCodec *m_codec;
     int m_status;
     std::string m_message;
     tHttpHeadersMap m_headers;
-    DataBuffer *m_outputBuffer;
-    bool m_external;
+    IAsyncRequestHandler *m_asyncHandler;
+    size_t m_contentLength;
+    bool m_chunked;
 };
 
 

@@ -50,10 +50,10 @@ bool Webserv::CreateServer(NetworkAddress4 addr)
 
     host = new ServerHost(m_eventLoop);
 
-    VirtualHost *vhost1 = new VirtualHost;
+    VirtualHost *vhost1 = new VirtualHost(host);
     vhost1->m_serverNames.push_back("localhost");
 
-    VirtualHost *vhost2 = new VirtualHost;
+    VirtualHost *vhost2 = new VirtualHost(host);
     vhost2->m_serverNames.push_back("127.0.0.1");
 
     host->AddVirtualHost(vhost1);

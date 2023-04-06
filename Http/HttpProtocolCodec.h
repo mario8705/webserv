@@ -12,6 +12,8 @@
 class HttpClientHandler;
 class DataBuffer;
 class Response;
+class BufferEvent;
+class IAsyncRequestHandler;
 
 class HttpProtocolCodec
 {
@@ -20,24 +22,36 @@ public:
     typedef std::map<std::string, HttpVersion> tHttpVersionsMap;
     typedef std::map<std::string, std::string> tHeaderMap;
 
-    explicit HttpProtocolCodec(HttpClientHandler *handler);
+    explicit HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output);
     ~HttpProtocolCodec();
 
-    void ProcessDataInput(DataBuffer *in);
+    void ProcessDataInput();
 
-    void EncodeResponse(DataBuffer *out, Response *response);
+    void EncodeResponse(Response *response);
     void FinalizeResponse();
+
+    /**
+     * Writes data into the stream, with respect to the current transfer encoding.
+     * @param data
+     * @param n
+     */
+    void Write(const void *data, size_t n);
+
+    void Write(DataBuffer *buffer);
 
 private:
     void ParseRequestHeader(const std::string &line);
     void SetRequestHeader(const std::string &method, const std::string &rawPath, const std::string &httpVersion);
     void ParseHeader(const std::string &line);
-    void WriteResponseHeader(DataBuffer *out, int status, const std::string &statusMessage);
-    void WriteHeaders(DataBuffer *out, const tHeaderMap &headers);
+    void WriteResponseHeader(int status, const std::string &statusMessage);
+    void WriteHeaders(const tHeaderMap &headers);
 
     void DispatchRequest();
 
     HttpClientHandler *m_handler;
+    BufferEvent *m_bufferEvent;
+    DataBuffer *m_inputBuffer;
+    DataBuffer *m_outputBuffer;
     tHttpMethodsMap m_methods;
     tHttpVersionsMap m_httpVersions;
     tHeaderMap m_headers;
@@ -45,6 +59,7 @@ private:
     HttpMethod m_method;
     HttpVersion m_httpVersion;
     std::string m_rawPath;
+    IAsyncRequestHandler *m_asyncHandler;
 };
 
 

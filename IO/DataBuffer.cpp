@@ -77,7 +77,7 @@ bool DataBuffer::Readln(std::string &line) {
     return true;
 }
 
-int DataBuffer::Receive(int fd)
+int DataBuffer::Read(int fd)
 {
     BufferChain *chain;
     ssize_t n;
@@ -95,7 +95,7 @@ int DataBuffer::Receive(int fd)
     avail = m_readHighWatermark - m_length;
     if (avail > chain->GetFreeSpace())
         avail = chain->GetFreeSpace();
-    n = recv(fd, chain->m_buffer + chain->m_offset, avail, 0);
+    n = read(fd, chain->m_buffer + chain->m_offset, avail);
     printf("Chain : %lu\n", avail);
     if (n > 0) {
         chain->m_offset += n;
@@ -211,7 +211,7 @@ int DataBuffer::CopyOut(void *data, size_t n)
     return total;
 }
 
-int DataBuffer::Send(int fd)
+int DataBuffer::Write(int fd)
 {
     tChainList::iterator it;
     BufferChain *chain;
@@ -225,7 +225,7 @@ int DataBuffer::Send(int fd)
         chain = *it;
         if (chain->m_type == kSegmentType_Memory) {
             sz = chain->m_offset - chain->m_misalign;
-            n = send(fd, chain->m_buffer + chain->m_misalign, sz, 0);
+            n = write(fd, chain->m_buffer + chain->m_misalign, sz);
             if (n <= 0) {
                 if (n == 0 && total > 0)
                     return total;

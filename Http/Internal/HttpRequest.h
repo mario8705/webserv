@@ -9,7 +9,7 @@
 class HttpRequest : public Request
 {
 public:
-    HttpRequest(HttpMethod method, const std::string &rawPath, HttpVersion version, tHttpHeaders &headers);
+    HttpRequest(HttpProtocolCodec *codec, HttpMethod method, const std::string &rawPath, HttpVersion version, tHttpHeaders &headers);
     ~HttpRequest();
 };
 

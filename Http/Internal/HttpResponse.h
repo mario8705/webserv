@@ -6,12 +6,16 @@
 #define WEBSERV_HTTPRESPONSE_H
 #include "../Response.h"
 
+class HttpProtocolCodec;
+
 class HttpResponse : public Response
 {
 public:
-    HttpResponse();
+    HttpResponse(HttpProtocolCodec *codec);
     ~HttpResponse();
 
+    int Write(const void *data, size_t n);
+    void End();
 };
 
 

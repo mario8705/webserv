@@ -8,18 +8,21 @@
 #include <string>
 #include <vector>
 
+class ServerHost;
+
 class VirtualHost : public IRequestHandler
 {
 public:
     typedef std::vector<std::string> tServerNameList;
 
-    VirtualHost();
+    explicit VirtualHost(ServerHost *serverHost);
     ~VirtualHost();
 
     void HandleRequest(Request *request, Response *response);
 
     const tServerNameList &GetServerNames() const;
 
+    ServerHost *m_host;
     tServerNameList m_serverNames;
 };
 

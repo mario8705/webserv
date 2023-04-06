@@ -8,7 +8,7 @@
 #include <string>
 
 class IEventLoop;
-class SocketEvent;
+class BufferEvent;
 
 class HttpClient
 {
@@ -20,7 +20,7 @@ public:
 
 private:
     IEventLoop *m_eventLoop;
-    SocketEvent *m_socketEvent;
+    BufferEvent *m_event;
     std::string m_host;
     uint16_t m_port;
 };

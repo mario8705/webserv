@@ -3,11 +3,23 @@
 //
 
 #include "HttpResponse.h"
+#include "../HttpProtocolCodec.h"
 
-HttpResponse::HttpResponse() {
-
+HttpResponse::HttpResponse(HttpProtocolCodec *codec)
+{
+    m_codec = codec;
 }
 
-HttpResponse::~HttpResponse() {
+HttpResponse::~HttpResponse()
+{
+}
+
+int HttpResponse::Write(const void *data, size_t n)
+{
+    return 0;
+}
+
+void HttpResponse::End()
+{
 
 }

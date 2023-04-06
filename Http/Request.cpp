@@ -23,6 +23,12 @@ std::string Request::GetRawPath() const
     return m_rawPath;
 }
 
-const Request::tHttpHeaders &Request::GetHeaders() const {
+const Request::tHttpHeaders &Request::GetHeaders() const
+{
     return m_headers;
+}
+
+HttpProtocolCodec *Request::GetHttpCodec() const
+{
+    return m_codec;
 }
