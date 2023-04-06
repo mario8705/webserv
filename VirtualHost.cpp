@@ -20,69 +20,10 @@ VirtualHost::~VirtualHost()
 #include "Http/AsyncRequestHandler.h"
 #include "IO/BufferEvent.h"
 #include <sstream>
+#include "Http/FileRequestHandler.h"
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/stat.h>
-
-#include "Http/HttpProtocolCodec.h"
-#include "IO/BufferEventHandler.h"
-
-class FileRequestHandler : public IAsyncRequestHandler, public IBufferEventHandler
-{
-public:
-    ~FileRequestHandler()
-    {
-        printf("FileRequestHandler deleted !!!!!\n");
-        delete m_event;
-    }
-
-    void HandleRead(DataBuffer *buffer)
-    {
-        m_codec->Write(buffer);
-    }
-
-    void HandleWrite(DataBuffer *buffer)
-    {
-    }
-
-    void HandleEvent(EventType type)
-    {
-        if (kEventType_EOF == type)
-        {
-            m_event->Enable(0);
-            m_codec->FinalizeResponse();
-        }
-    }
-
-    static FileRequestHandler *Create(IEventLoop *eventLoop, Response *response, int fd)
-    {
-        struct stat st;
-
-        if (fstat(fd, &st) < 0)
-        {
-            return NULL;
-        }
-
-        return new FileRequestHandler(eventLoop, response, fd, st.st_size);
-    }
-
-private:
-    FileRequestHandler(IEventLoop *eventLoop, Response *response, int fd, size_t length)
-            : m_codec(response->GetHttpCodec()), m_length(length)
-    {
-        m_event = new BufferEvent(eventLoop, this, fd);
-        m_event->Enable(kEvent_Read);
-
-        response->AddHeader("Content-Type", "application/octet-stream");
-        response->SetContentLength(length);
-        response->SetChunked(false);
-    }
-
-    BufferEvent *m_event;
-    HttpProtocolCodec *m_codec;
-    size_t m_length;
-};
 
 void VirtualHost::HandleRequest(Request *request, Response *response)
 {
