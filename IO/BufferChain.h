@@ -6,29 +6,23 @@
 #define WEBSERV_BUFFERCHAIN_H
 #include <cstdlib>
 
-typedef enum {
-    kSegmentType_Memory,
-    kSegmentType_File,
-} eBufferSegmentType;
-
 class BufferChain
 {
 public:
     BufferChain();
     ~BufferChain();
 
-    size_t GetFreeSpace() const
-    {
-        return m_size - m_offset;
-    }
+    size_t GetFreeSpace() const;
+
+    static BufferChain *Allocate(size_t capacity);
 
 //private:
-    eBufferSegmentType m_type;
     char *m_buffer;
-    int m_fd;
     size_t m_misalign;
     size_t m_offset;
     size_t m_size;
+
+private:
 };
 
 

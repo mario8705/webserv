@@ -111,14 +111,13 @@ BufferChain *DataBuffer::NewMemorySegment(size_t minCapacity)
     BufferChain *chain;
     size_t closestCap;
 
-    closestCap = SIZE_MAX;
+    closestCap = std::numeric_limits<size_t>::max();
     chainIt = m_freeChains.end();
     for (it = m_freeChains.begin(); it != m_freeChains.end(); ++it)
     {
         chain = *it;
-        if (chain->m_type == kSegmentType_Memory &&
-        chain->m_size >= minCapacity &&
-        chain->m_size < closestCap)
+        if (chain->m_size >= minCapacity &&
+            chain->m_size < closestCap)
         {
             closestCap = chain->m_size;
             chainIt = it;
@@ -134,12 +133,7 @@ BufferChain *DataBuffer::NewMemorySegment(size_t minCapacity)
     }
     else
     {
-        chain = new BufferChain;
-        chain->m_type = kSegmentType_Memory;
-        chain->m_size = minCapacity;
-        chain->m_misalign = 0;
-        chain->m_offset = 0;
-        chain->m_buffer = new char[minCapacity];
+        chain = BufferChain::Allocate(minCapacity);
         printf("Allocated new chain\n");
     }
     m_chains.push_back(chain);
@@ -160,13 +154,9 @@ int DataBuffer::FindEOL(BufferPtr &ptr) const
     {
         chain = *it;
 
-        /* XXX: Shouldn't attempt to read a file */
-        if (chain->m_type == kSegmentType_Memory)
+        for (i = chain->m_misalign; i < chain->m_offset && !nl; ++i, ++off)
         {
-            for (i = chain->m_misalign; i < chain->m_offset && !nl; ++i, ++off)
-            {
-                nl = (chain->m_buffer[i] == '\n');
-            }
+            nl = (chain->m_buffer[i] == '\n');
         }
     }
     if (nl) {
@@ -223,32 +213,15 @@ int DataBuffer::Write(int fd)
     total = 0;
     for (it = m_chains.begin(); it != m_chains.end(); ) {
         chain = *it;
-        if (chain->m_type == kSegmentType_Memory) {
-            sz = chain->m_offset - chain->m_misalign;
-            n = write(fd, chain->m_buffer + chain->m_misalign, sz);
-            if (n <= 0) {
-                if (n == 0 && total > 0)
-                    return total;
-                return n;
-            }
-            total += n;
-            m_length -= n;
-        } else if (chain->m_type == kSegmentType_File) {
-            if (chain->m_misalign > 0) {
-              //  n = send(fd, chain->m_buffer)
-            }
-            else {
-                n = read(chain->m_fd, chain->m_buffer, 4096);
-                if (n <= 0) {
-                    if (n == 0 && total > 0)
-                        return total;
-                    return n;
-                }
-                chain->m_misalign = n;
-            }
+        sz = chain->m_offset - chain->m_misalign;
+        n = write(fd, chain->m_buffer + chain->m_misalign, sz);
+        if (n <= 0) {
+            if (n == 0 && total > 0)
+                return total;
+            return n;
         }
-        else
-            break ;
+        total += n;
+        m_length -= n;
         chain->m_misalign += n;
         if (chain->m_misalign == chain->m_offset) {
             it = m_chains.erase(it);
@@ -260,40 +233,6 @@ int DataBuffer::Write(int fd)
 
     }
     return total;
-}
-
-int DataBuffer::AddFile(int fd, size_t offset, size_t length)
-{
-    tChainList::iterator it;
-    BufferChain *chain;
-
-    if (offset != 0)
-        return -1;
-
-    /* Find a spare file segment chain */
-    for (it = m_freeChains.begin(); it != m_freeChains.end(); ++it)
-    {
-        chain = *it;
-        if (chain->m_type == kSegmentType_File)
-            break ;
-    }
-    if (it == m_freeChains.end())
-    {
-        chain = new BufferChain;
-        chain->m_type = kSegmentType_File;
-        chain->m_buffer = new char[4096];
-    }
-    else
-    {
-        m_freeChains.erase(it);
-    }
-    chain->m_offset = offset;
-    chain->m_size = length;
-    chain->m_misalign = 0;
-    chain->m_fd = fd;
-    m_length += length;
-    m_chains.push_back(chain);
-    return 0;
 }
 
 void DataBuffer::AddBuffer(DataBuffer *buffer)

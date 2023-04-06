@@ -42,8 +42,6 @@ public:
 
     int PutString(const std::string &s);
 
-    int AddFile(int fd, size_t offset, size_t length);
-
     int CopyOut(void *data, size_t n);
 
     int FindEOL(BufferPtr &ptr) const;

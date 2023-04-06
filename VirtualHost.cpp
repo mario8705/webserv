@@ -32,7 +32,7 @@ void VirtualHost::HandleRequest(Request *request, Response *response)
 
     int fd;
 
-    fd = open("/dev/urandom", O_RDONLY | O_NONBLOCK);
+    fd = open("/Users/alexislavaud/Downloads/The Batman [FR-EN] (2022).mkv", O_RDONLY | O_NONBLOCK);
     if (fd < 0)
     {
         perror("meh");
