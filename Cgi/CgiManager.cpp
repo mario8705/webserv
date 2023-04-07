@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include "CgiManager.hpp"
 
 CgiManager::CgiManager() {
@@ -34,24 +35,50 @@ void CgiManager::execute(const std::string &cgiName) { //todo: modifier le env o
     int pid = fork();
     int fds_in[2], fds_out[2];
 	const std::string cgiFileName("cgiFile.txt");
+
     convertEnvMap();
     char **env = convertEnvMap();
 
 
 	std::ofstream cgiFile(cgiFileName.c_str());
 	std::streambuf *oldCout = std::cout.rdbuf();
-    pipe(fds_in), pipe(fds_out);
+    //pipe(fds_in);
+    pipe(fds_out);
 
     if (pid == 0)
     {
-        dup2(fds_in[0], STDIN_FILENO);
-        dup2(fds_out[0], STDOUT_FILENO);
-        char *args[] ={const_cast<char *>(cgiName.c_str()), NULL};
+        close(fds_out[0]);
+        dup2(fds_out[1], STDOUT_FILENO);
+        close(fds_out[1]);
+        std::string command = PHP_CMD " " + cgiName;
+        std::cerr << "CGI is executed: " << std::boolalpha << std::system(command.c_str()) << std::endl;
+        exit(EXIT_SUCCESS);
+
+        //dup2(fds_in[0], STDIN_FILENO);
+        /*int cgiFD = ::fileno(cgiFile);
+        std::string fullExecutablePath(CGI_PATH + cgiName);
+        char *args[] ={const_cast<char *>(fullExecutablePath.c_str()), NULL};
        	std::cout.rdbuf(cgiFile.rdbuf()); //dup2 like
-        execve(CGI_PATH, args, env);
-        std::cerr << "CGI EXCEPTION\n";
-        exit(2);
+        std::cerr << "CGI TO EXEC:" << args[0] << std::endl;
+
+        execve("/bin/php", args, env);
+        std::cerr << "<><><><<<<<>CGI EXCEPTION<>>>>>>>>>>>><><><><>\n";
+        exit(2);*/
     } //todo: recuperer les informations du CGI et les enregistrer dans cgiResponse;
+    else
+    {
+        close(fds_out[1]); // on ferme l'écriture du pipe dans le processus parent
+        std::cout << "\nCHOCAPIC\n";
+        char buffer[4096];
+        ssize_t n;
+        while ((n = read(fds_out[0], buffer, sizeof(buffer))) > 0) {
+            // écriture de la sortie dans un fichier
+            int outputFd = open("output.txt", O_WRONLY | O_CREAT | O_APPEND, 0644);
+            write(outputFd, buffer, n);
+            close(outputFd);
+        }
+        close(fds_out[0]);
+    }
 	std::cout.rdbuf(oldCout);
 	convertCgiFileToCgiResponse(cgiFileName);
 
@@ -73,10 +100,12 @@ char ** CgiManager::convertEnvMap() {
 
     char **env = new char *[serVarMap.size()] ;
     std::map<std::string, std::string>::iterator itMap = serVarMap.begin();
-    for (int i = 0; itMap != serVarMap.end() ; ++itMap, ++i) {
+    int i = 0;
+    for (; itMap != serVarMap.end() ; ++itMap, ++i) {
         env[i] = new char[itMap->second.length() + 1];
         std::strcpy(env[i], itMap->second.c_str());
     }
+    env[i] = NULL;
     return env;
 }
 

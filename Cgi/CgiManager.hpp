@@ -10,6 +10,7 @@
 #include <map>
 
 #define CGI_PATH "cgi-bin/"
+#define PHP_CMD "/bin/php"
 
 class CgiManager {
 
