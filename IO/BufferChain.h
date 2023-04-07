@@ -5,6 +5,7 @@
 #ifndef WEBSERV_BUFFERCHAIN_H
 #define WEBSERV_BUFFERCHAIN_H
 #include <cstdlib>
+#include <vector>
 
 class BufferChain
 {
@@ -14,7 +15,12 @@ public:
 
     size_t GetFreeSpace() const;
 
+    void Release();
+
     static BufferChain *Allocate(size_t capacity);
+    static void ReleasePool();
+
+    static const int kMaxPooledChains;
 
 //private:
     char *m_buffer;
@@ -23,6 +29,7 @@ public:
     size_t m_size;
 
 private:
+    static std::vector<BufferChain *> m_pool;
 };
 
 

@@ -7,6 +7,7 @@
 #include "Network/ListenerEvent.h"
 #include "ServerHost.h"
 #include "VirtualHost.h"
+#include "IO/BufferChain.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -34,6 +35,8 @@ Webserv::~Webserv()
     /* TODO free all ServerHost */
 
     delete m_eventLoop;
+
+    BufferChain::ReleasePool();
 }
 
 bool Webserv::CreateServer(NetworkAddress4 addr)
