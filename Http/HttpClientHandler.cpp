@@ -14,7 +14,7 @@ HttpClientHandler::HttpClientHandler(ServerHost *host, int fd)
 {
     m_event = new BufferEvent(host->GetEventLoop(), this, fd);
     m_event->GetInputBuffer()->SetReadHighWatermark(16384);
-    m_event->Enable(kEvent_Read | kEvent_Write);
+    m_event->Enable(kEvent_Read);
     m_protocolCodec = new HttpProtocolCodec(this, m_event->GetInputBuffer(), m_event->GetOutputBuffer());
 }
 
@@ -29,11 +29,12 @@ void HttpClientHandler::HandleRead(DataBuffer *buffer)
     m_protocolCodec->ProcessDataInput();
 }
 
-void HttpClientHandler::HandleWrite(DataBuffer *buffer)
-{
-    if (m_disconnecting && m_event->GetOutputBuffer()->GetLength() == 0)
-    {
-        m_host->DeferDeletion(this);
+void HttpClientHandler::HandleWrite(DataBuffer *buffer) {
+    if (m_disconnecting) {
+        if (m_event->GetOutputBuffer()->GetLength() == 0)
+            m_host->DeferDeletion(this);
+    } else {
+        m_protocolCodec->OnOutputDrained();
     }
 }
 

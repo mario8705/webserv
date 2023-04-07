@@ -26,6 +26,7 @@ public:
     ~HttpProtocolCodec();
 
     void ProcessDataInput();
+    void OnOutputDrained();
 
     void EncodeResponse(Response *response);
     void FinalizeResponse();

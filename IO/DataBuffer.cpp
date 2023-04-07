@@ -93,6 +93,7 @@ int DataBuffer::Read(int fd)
     if (!chain)
         chain = NewMemorySegment(4096);
     avail = m_readHighWatermark - m_length;
+    printf("Chain_before : %lu\n", avail);
     if (avail > chain->GetFreeSpace())
         avail = chain->GetFreeSpace();
     n = read(fd, chain->m_buffer + chain->m_offset, avail);

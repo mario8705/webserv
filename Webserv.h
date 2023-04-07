@@ -4,6 +4,7 @@
 
 #ifndef WEBSERV_WEBSERV_H
 #define WEBSERV_WEBSERV_H
+#include <csignal>
 #include <vector>
 #include <map>
 #include "Network/NetworkAddress4.h"
@@ -27,6 +28,7 @@ public:
     void Run();
 
     bool IsRunning() const;
+    void Stop();
 
 private:
     IEventLoop *m_eventLoop;
@@ -34,7 +36,7 @@ private:
     tHostList m_hosts;
     tVirtualHostList m_virtualHosts;
 //    std::map<NetworkAddress4, ServerHost *> m_hosts;
-    volatile bool m_running;
+    volatile sig_atomic_t m_running;
 };
 
 

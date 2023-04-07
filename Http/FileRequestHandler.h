@@ -22,6 +22,8 @@ public:
     void HandleWrite(DataBuffer *buffer);
     void HandleEvent(EventType type);
 
+    void OnOutputDrained();
+
     static FileRequestHandler *Create(IEventLoop *eventLoop, Response *response, int fd);
 
 private:

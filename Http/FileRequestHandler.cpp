@@ -9,12 +9,14 @@
 #include "../IO/BufferEvent.h"
 #include "Response.h"
 #include "HttpProtocolCodec.h"
+#include "../IO/DataBuffer.h"
 
 FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response, int fd, size_t length)
         : m_codec(response->GetHttpCodec()), m_length(length)
 {
     m_event = new BufferEvent(eventLoop, this, fd);
     m_event->Enable(kEvent_Read);
+    m_event->GetInputBuffer()->SetReadHighWatermark(65536);
 
     response->AddHeader("Content-Type", "application/octet-stream");
     response->SetContentLength(length);
@@ -35,7 +37,8 @@ void FileRequestHandler::HandleEvent(EventType type) {
 }
 
 void FileRequestHandler::HandleRead(DataBuffer *buffer) {
-    m_codec->Write(buffer);
+    m_codec->Write(m_event->GetInputBuffer());
+    printf("Current input buffer length: %zu\n", m_event->GetInputBuffer()->GetLength());
 }
 
 void FileRequestHandler::HandleWrite(DataBuffer *buffer) {

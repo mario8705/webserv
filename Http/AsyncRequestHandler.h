@@ -10,7 +10,7 @@ class IAsyncRequestHandler
 public:
     virtual ~IAsyncRequestHandler() {}
 
-
+    virtual void OnOutputDrained() = 0;
 };
 
 #endif //WEBSERV_ASYNCREQUESTHANDLER_H

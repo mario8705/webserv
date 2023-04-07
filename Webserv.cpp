@@ -20,7 +20,7 @@
 Webserv::Webserv()
 {
     m_eventLoop = new SelectEventLoop;
-    m_running = false;
+    m_running = 0;
 }
 
 Webserv::~Webserv()
@@ -80,7 +80,7 @@ void Webserv::Run() {
     tHostList::iterator it;
     ServerHost *host;
 
-    m_running = true;
+    m_running = 1;
     while (IsRunning()) {
         for (it = m_hosts.begin(); it != m_hosts.end(); ++it) {
             host = *it;
@@ -93,5 +93,10 @@ void Webserv::Run() {
 }
 
 bool Webserv::IsRunning() const {
-    return m_running;
+    return (m_running == 1);
+}
+
+void Webserv::Stop()
+{
+    m_running = 0;
 }

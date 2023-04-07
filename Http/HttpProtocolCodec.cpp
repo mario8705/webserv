@@ -75,6 +75,14 @@ void HttpProtocolCodec::ProcessDataInput()
     }
 }
 
+void HttpProtocolCodec::OnOutputDrained()
+{
+    if (m_asyncHandler)
+    {
+        m_asyncHandler->OnOutputDrained();
+    }
+}
+
 void HttpProtocolCodec::EncodeResponse(Response *response)
 {
     WriteResponseHeader(response->GetStatusCode(), response->GetStatusMessage());
