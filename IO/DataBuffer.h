@@ -62,13 +62,16 @@ public:
     void SetReadHighWatermark(uint32_t watermark);
     uint32_t GetReadHighWatermark() const;
 
+    void SetWriteHighWatermark(uint32_t watermark);
+    uint32_t GetWriteHighWatermark() const;
+
 private:
     BufferChain *NewMemorySegment(size_t minCapacity);
 
     size_t m_length;
     uint32_t m_readHighWatermark;
+    uint32_t m_writeHighWatermark;
     tChainList m_chains;
-    tChainList m_freeChains;
 };
 
 

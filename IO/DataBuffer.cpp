@@ -11,7 +11,9 @@
 DataBuffer::DataBuffer()
 {
     m_length = 0;
-    m_readHighWatermark = 0xFFFFFFFF;
+    /* TODO warning : typeof is a GCC extension, decltype is preferred but is a C++11 feature :/ */
+    m_readHighWatermark = std::numeric_limits<typeof(m_readHighWatermark)>::max();
+    m_writeHighWatermark = std::numeric_limits<typeof(m_readHighWatermark)>::max();
 }
 
 DataBuffer::~DataBuffer()
@@ -20,11 +22,7 @@ DataBuffer::~DataBuffer()
 
     for (it = m_chains.begin(); it != m_chains.end(); ++it)
     {
-        delete *it;
-    }
-    for (it = m_freeChains.begin(); it != m_freeChains.end(); ++it)
-    {
-        delete *it;
+        (*it)->Release();
     }
 }
 
@@ -93,7 +91,7 @@ int DataBuffer::Read(int fd)
     if (!chain)
         chain = NewMemorySegment(4096);
     avail = m_readHighWatermark - m_length;
-    printf("Chain_before : %lu\n", avail);
+    printf("Chain_before : %lu (R_WTMK: %zu, SZ: %zu)\n", avail, m_readHighWatermark, m_length);
     if (avail > chain->GetFreeSpace())
         avail = chain->GetFreeSpace();
     n = read(fd, chain->m_buffer + chain->m_offset, avail);
@@ -102,41 +100,19 @@ int DataBuffer::Read(int fd)
         chain->m_offset += n;
         m_length += n;
     }
+    else
+    {
+        perror("read");
+    }
+    printf("Returned : %d\n", n);
     return static_cast<int>(n);
 }
 
 BufferChain *DataBuffer::NewMemorySegment(size_t minCapacity)
 {
-    std::vector<BufferChain *>::iterator it;
-    std::vector<BufferChain *>::iterator chainIt;
     BufferChain *chain;
-    size_t closestCap;
 
-    closestCap = std::numeric_limits<size_t>::max();
-    chainIt = m_freeChains.end();
-    for (it = m_freeChains.begin(); it != m_freeChains.end(); ++it)
-    {
-        chain = *it;
-        if (chain->m_size >= minCapacity &&
-            chain->m_size < closestCap)
-        {
-            closestCap = chain->m_size;
-            chainIt = it;
-        }
-    }
-    if (chainIt != m_freeChains.end())
-    {
-        chain = *chainIt;
-        m_freeChains.erase(chainIt);
-        chain->m_offset = 0;
-        chain->m_misalign = 0;
-        printf("Recycled chain\n");
-    }
-    else
-    {
-        chain = BufferChain::Allocate(minCapacity);
-        printf("Allocated new chain\n");
-    }
+    chain = BufferChain::Allocate(minCapacity);
     m_chains.push_back(chain);
     return chain;
 }
@@ -191,8 +167,8 @@ int DataBuffer::CopyOut(void *data, size_t n)
         if (chain->m_misalign == chain->m_offset &&
             chain->m_offset == chain->m_size)
         {
-            printf("Empty chain, recycling\n");
             it = m_chains.erase(it);
+            chain->Release();
         }
         else
         {
@@ -209,7 +185,6 @@ int DataBuffer::Write(int fd)
     size_t sz;
     ssize_t n;
     ssize_t total;
-    char buf[1024];
 
     total = 0;
     for (it = m_chains.begin(); it != m_chains.end(); ) {
@@ -226,7 +201,7 @@ int DataBuffer::Write(int fd)
         chain->m_misalign += n;
         if (chain->m_misalign == chain->m_offset) {
             it = m_chains.erase(it);
-            m_freeChains.push_back(chain);
+            chain->Release();
         }
         else {
             break ;
@@ -254,4 +229,12 @@ void DataBuffer::SetReadHighWatermark(uint32_t watermark) {
 
 uint32_t DataBuffer::GetReadHighWatermark() const {
     return m_readHighWatermark;
+}
+
+void DataBuffer::SetWriteHighWatermark(uint32_t watermark) {
+    m_writeHighWatermark = watermark;
+}
+
+uint32_t DataBuffer::GetWriteHighWatermark() const {
+    return m_writeHighWatermark;
 }

@@ -271,3 +271,11 @@ void HttpProtocolCodec::Write(DataBuffer *buffer)
 {
     m_outputBuffer->AddBuffer(buffer);
 }
+
+DataBuffer *HttpProtocolCodec::GetInputBuffer() const {
+    return m_inputBuffer;
+}
+
+DataBuffer *HttpProtocolCodec::GetOutputBuffer() const {
+    return m_outputBuffer;
+}

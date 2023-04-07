@@ -47,9 +47,9 @@ BufferChain *BufferChain::Allocate(size_t capacity) {
     {
         buffer = new char[capacity];
         chain = new BufferChain;
+        chain->m_buffer = buffer;
     }
     chain->m_size = capacity;
-    chain->m_buffer = buffer;
     chain->m_misalign = 0;
     chain->m_offset = 0;
     return chain;

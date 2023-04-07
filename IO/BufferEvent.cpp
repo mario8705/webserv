@@ -49,7 +49,8 @@ void BufferEvent::NotifyWrite() {
             else
                 m_handler->HandleEvent(kEventType_Error);
         } else {
-            m_handler->HandleWrite(m_outputBuffer);
+            if (m_outputBuffer->GetLength() == 0)
+                m_handler->HandleWrite(m_outputBuffer);
         }
     }
 }

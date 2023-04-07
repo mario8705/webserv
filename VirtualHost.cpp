@@ -36,7 +36,7 @@ void VirtualHost::HandleRequest(Request *request, Response *response)
     if (fd < 0)
     {
         perror("meh");
-        return ;
+        exit(0);
     }
 
     if (NULL == (handler = FileRequestHandler::Create(m_host->GetEventLoop(), response, fd)))

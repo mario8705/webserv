@@ -36,9 +36,14 @@ void FileRequestHandler::HandleEvent(EventType type) {
     }
 }
 
+/**
+ * Data is available in the file buffer.
+ * @param buffer
+ */
 void FileRequestHandler::HandleRead(DataBuffer *buffer) {
-    m_codec->Write(m_event->GetInputBuffer());
-    printf("Current input buffer length: %zu\n", m_event->GetInputBuffer()->GetLength());
+    if (m_codec->GetOutputBuffer()->GetLength() < 65536)
+        m_codec->Write(m_event->GetInputBuffer());
+ //   printf("Data: %zu\n", m_event->GetInputBuffer()->GetLength());
 }
 
 void FileRequestHandler::HandleWrite(DataBuffer *buffer) {
@@ -54,3 +59,7 @@ FileRequestHandler *FileRequestHandler::Create(IEventLoop *eventLoop, Response *
     return new FileRequestHandler(eventLoop, response, fd, st.st_size);
 }
 
+void FileRequestHandler::OnOutputDrained() {
+    if (m_codec->GetOutputBuffer()->GetLength() < 65536)
+        m_codec->Write(m_event->GetInputBuffer());
+}

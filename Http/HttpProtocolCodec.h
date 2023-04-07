@@ -40,6 +40,9 @@ public:
 
     void Write(DataBuffer *buffer);
 
+    DataBuffer *GetInputBuffer() const;
+    DataBuffer *GetOutputBuffer() const;
+
 private:
     void ParseRequestHeader(const std::string &line);
     void SetRequestHeader(const std::string &method, const std::string &rawPath, const std::string &httpVersion);

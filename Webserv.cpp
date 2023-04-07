@@ -76,12 +76,31 @@ bool Webserv::CreateServer(NetworkAddress4 addr)
     return false;
 }
 
+#include<mach/mach.h>
+
+static void MemoryLimit(Webserv *webserv) {
+    struct task_basic_info t_info;
+    mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+
+    if (KERN_SUCCESS != task_info(mach_task_self(),
+                                  TASK_BASIC_INFO, (task_info_t) &t_info,
+                                  &t_info_count)) {
+        return;
+    }
+
+    if (t_info.resident_size > 104857600) {
+        //fprintf(stderr, "Memory limit reached (current resident vm size: %lu MiB)\n", t_info.resident_size / 1024 / 1024);
+       // exit(64);
+    }
+}
+
 void Webserv::Run() {
     tHostList::iterator it;
     ServerHost *host;
 
     m_running = 1;
     while (IsRunning()) {
+        MemoryLimit(this);
         for (it = m_hosts.begin(); it != m_hosts.end(); ++it) {
             host = *it;
             host->ProcessDeferredActions();
