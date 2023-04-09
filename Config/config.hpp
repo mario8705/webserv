@@ -14,8 +14,8 @@
 
 enum TokenType {
     ident,
-    openbracket,
-    closebracket,
+    leftbracket,
+    rightbracket,
     semicolon,
     string,
 };
@@ -26,6 +26,7 @@ public:
     TokenType getType();
     std::string getTypeString();
     std::string getToken();
+
 
 
 private:

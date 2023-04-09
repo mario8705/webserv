@@ -1,14 +1,14 @@
 #include "config.hpp"
 Token::Token(std::string token, TokenType tokentype) : _Token(token), _tokenType(tokentype)
 {
-    std::cout << "Token creation\n";
+    //std::cout << "Token creation\n";
 }
 Token::~Token() {}
 TokenType Token::getType() {return(_tokenType);}
 std::string Token::getToken() {return (_Token);}
 
 std::string Token::getTypeString() {
-    static const char* typeNames[] = {"ident", "openbracket", "closebracket", "semicolon", "string"};
+    static const char* typeNames[] = {"ident", "left bracket", "right bracket", "semicolon", "string"};
     return typeNames[_tokenType];
 }
 int main()
@@ -24,7 +24,9 @@ int main()
     {
         if (isspace(ch))
         {
-            tokens.push_back(new Token(line, ident));
+            if (!line.empty())
+                tokens.push_back(new Token(line, ident));
+            //tokens.push_back(new Token(line, ident));
             line.clear();
             while(isspace(ch) && !file.eof())
                 file.get(ch);
@@ -34,7 +36,6 @@ int main()
             if (!line.empty())
                 tokens.push_back(new Token(line, ident));
             line.clear();
-            //std::cout << ch << "  ||  " << line << std::endl;
             tokens.push_back(new Token(";", semicolon));
             file.get(ch);
             while(isspace(ch) && !file.eof())
@@ -46,6 +47,20 @@ int main()
         {
             while (ch != '\n' && !file.eof())
                 file.get(ch);
+            while(isspace(ch) && !file.eof())
+                file.get(ch);
+        }
+        if (ch == '{')
+        {
+            tokens.push_back(new Token("{", leftbracket));
+            line.clear();
+            while(isspace(ch) && !file.eof())
+                file.get(ch);
+        }
+        if (ch == '}')
+        {
+            tokens.push_back(new Token("}", rightbracket));
+            line.clear();
             while(isspace(ch) && !file.eof())
                 file.get(ch);
         }
@@ -64,14 +79,13 @@ int main()
             while(isspace(ch) && !file.eof())
                 file.get(ch);
         }
-        //std::cout << ch << "  ||  " << line << std::endl;
-        if (ch != ';' && ch != '\n' && ch != '#' && ch!= '\'' && !file.eof())
+        if (ch != ';' && ch != '\n' && ch != '#' && ch!= '\'' && ch != '{' && ch != '}' && !file.eof())
             line += ch;
     }
     if (!line.empty())
         tokens.push_back(new Token(line, ident));
     for (size_t i = 0; i < tokens.size(); i++)
     {
-        std::cout << "Type : "<< tokens[i]->getTypeString() << ", Value : "<< tokens[i]->getToken() << std::endl;
+        std::cout << "Token "<< tokens[i]->getTypeString() << ", value: "<< tokens[i]->getToken() << std::endl;
     }
 }
