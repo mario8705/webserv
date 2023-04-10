@@ -25,7 +25,7 @@ int main()
         if (isspace(ch))
         {
             if (!line.empty())
-                tokens.push_back(new Token(line, ident));
+                tokens.push_back(new Token(line, kTokentype_Ident));
             //tokens.push_back(new Token(line, ident));
             line.clear();
             while(isspace(ch) && !file.eof())
@@ -34,9 +34,9 @@ int main()
         if (ch == ';')
         {
             if (!line.empty())
-                tokens.push_back(new Token(line, ident));
+                tokens.push_back(new Token(line, kTokentype_Ident));
             line.clear();
-            tokens.push_back(new Token(";", semicolon));
+            tokens.push_back(new Token(";", kTokentype_Semicolon));
             file.get(ch);
             while(isspace(ch) && !file.eof())
             {
@@ -52,14 +52,14 @@ int main()
         }
         if (ch == '{')
         {
-            tokens.push_back(new Token("{", leftbracket));
+            tokens.push_back(new Token("{", kTokentype_Leftbracket));
             line.clear();
             while(isspace(ch) && !file.eof())
                 file.get(ch);
         }
         if (ch == '}')
         {
-            tokens.push_back(new Token("}", rightbracket));
+            tokens.push_back(new Token("}", kTokentype_Rightbracket));
             line.clear();
             while(isspace(ch) && !file.eof())
                 file.get(ch);
@@ -74,7 +74,7 @@ int main()
                 file.get(ch);
             }
             stringline += ch;
-            tokens.push_back(new Token(stringline, string));
+            tokens.push_back(new Token(stringline, kTokentype_String));
             stringline.clear();
             while(isspace(ch) && !file.eof())
                 file.get(ch);
@@ -82,8 +82,6 @@ int main()
         if (ch != ';' && ch != '\n' && ch != '#' && ch!= '\'' && ch != '{' && ch != '}' && !file.eof())
             line += ch;
     }
-    if (!line.empty())
-        tokens.push_back(new Token(line, ident));
     for (size_t i = 0; i < tokens.size(); i++)
     {
         std::cout << "Token "<< tokens[i]->getTypeString() << ", value: "<< tokens[i]->getToken() << std::endl;

@@ -13,11 +13,11 @@
 
 
 enum TokenType {
-    ident,
-    leftbracket,
-    rightbracket,
-    semicolon,
-    string,
+    kTokentype_Ident,
+    kTokentype_Leftbracket,
+    kTokentype_Rightbracket,
+    kTokentype_Semicolon,
+    kTokentype_String,
 };
 class Token {
 public:
