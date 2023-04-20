@@ -124,15 +124,6 @@ void ConfigProperty::push_config(std::vector<Token *> tokens, std::vector<Config
             stck.pop();
         if (tokens[i]->getTypeString() == "semicolon") {
             if (!stck.empty()) {
-               /* for (size_t i = 0; i < tmp.size(); i++) {
-                    std::cout << tmp[i];
-                }
-                std::cout << " RULE OF :: ";
-                std::vector<std::string> tmp2 = stck.top()->getParams();
-                for (size_t i = 0; i < tmp2.size(); i++) {
-                    std::cout << tmp2[i];
-                }
-                //std::cout << std::endl;*/
                 stck.top()->add_body(new ConfigProperty(tmp));
             } else
                 config->push_back(new ConfigProperty(tmp));
@@ -141,33 +132,91 @@ void ConfigProperty::push_config(std::vector<Token *> tokens, std::vector<Config
     }
 }
 
+void is_line_valid(std::string line, int line_nbr)
+{
+    if (line[line.length() -1] != ';' && line[line.length() -1] != '{' && line[line.length() -1] != '}')
+    {
+        std::cout << line << " <= :: ";
+        throw syntax_error_line(" Syntax Error ::", line_nbr);
+    }
+}
+
+void is_config_valid()
+{
+    char ch;
+    int line_nbr = 1;
+    int openbracket_nbr = 0;
+    int closedbracket_nbr = 0;
+    std::string line;
+    std::string stringline;
+    std::string filename = "../config.conf";
+    std::ifstream file(filename.c_str());
+
+    while (file.get(ch))
+    {
+        if (ch == ' ' || ch == '\t')
+        {
+            file.get(ch);
+            while(isspace(ch) && !file.eof())
+                file.get(ch);
+        }
+        if (ch == '#')
+        {
+            while (ch != '\n')
+                file.get(ch);
+        }
+        if (ch == '\n')
+        {
+            //std::cout << line;
+            if (line.length() > 1)
+                is_line_valid(line, line_nbr);
+            line_nbr++;
+            line.clear();
+        }
+        if (ch == '{')
+            openbracket_nbr++;
+        if (ch == '}')
+            closedbracket_nbr++;
+        line += ch;
+    }
+    if (closedbracket_nbr != openbracket_nbr)
+        throw std::runtime_error("Brackets number problem");
+}
+
 #include <stack>
 
 int main()
 {
-    std::vector<Token *> tokens;
-    std::vector<ConfigProperty *> configs;
-    Token::tokenization(&tokens);
-    ConfigProperty::push_config(tokens, &configs);
-    std:: cout << "---------------\nCONFIGS :: \n\n";
-    for (size_t i = 0; i < configs.size(); i++ )
-    {
-        std::vector<std::string> tmp = configs[i]->getParams();
-        std::vector<ConfigProperty *> tmp2 = configs[i]->getBodystring();
-        for (size_t j = 0; j < tmp.size(); j++)
-        {
-            std::cout << "CONFIG :: "<< tmp[j] << std::endl;
-            for (size_t k = 0; k < tmp2.size(); k++)
-            {
-                std::vector<std::string> tmp3 = tmp2[k]->getParams();
-                std::cout << "Rule of :: "<< tmp[j] << " :: ";
-                for (size_t l = 0; l < tmp3.size(); l++)
-                {
-                    std::cout << tmp3[l];
-                }
-                std::cout << std::endl;
-            }
+    try {
 
+        is_config_valid();
+        std::vector<Token *> tokens;
+        std::vector<ConfigProperty *> configs;
+        Token::tokenization(&tokens);
+        ConfigProperty::push_config(tokens, &configs);
+        std::cout << "---------------\nCONFIGS :: \n\n";
+        for (size_t i = 0; i < configs.size(); i++) {
+            std::vector<std::string> tmp = configs[i]->getParams();
+            std::vector<ConfigProperty *> tmp2 = configs[i]->getBodystring();
+            for (size_t j = 0; j < tmp.size(); j++) {
+                std::cout << "CONFIG :: " << tmp[j] << std::endl;
+                for (size_t k = 0; k < tmp2.size(); k++) {
+                    std::vector<std::string> tmp3 = tmp2[k]->getParams();
+                    std::cout << "Rule of :: " << tmp[j] << " :: ";
+                    for (size_t l = 0; l < tmp3.size(); l++) {
+                        std::cout << tmp3[l];
+                    }
+                    std::cout << std::endl;
+                }
+            }
         }
+    }
+    catch (syntax_error_line &e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+    catch (std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
     }
 }

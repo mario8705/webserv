@@ -11,6 +11,7 @@
 #include <cctype>
 #include <fstream>
 #include <stack>
+#include <stdexcept>
 
 
 enum TokenType {
@@ -51,3 +52,36 @@ private:
     std::vector<ConfigProperty *> _body;
 
 };
+
+/*lass line_exception : public std::exception {
+public:
+    line_exception(const std::string& message, int line_number) {
+        std::ostringstream oss;
+        oss << message << " (ligne " << line_number << ")";
+        m_what = oss.str();
+    }
+
+    virtual ~line_exception() throw() {}
+
+    virtual const char* what() const throw() {
+        return m_what.c_str();
+    }
+
+private:
+    std::string m_what;
+};*/
+class syntax_error_line : public std::exception {
+public:
+    syntax_error_line(const std::string& message, int line_number) {
+        std::ostringstream oss;
+        oss << message << " line " << line_number;
+        m_what = oss.str();
+    }
+    ~syntax_error_line() throw(){};
+
+    const char* what() const throw() { return m_what.c_str(); }
+private :
+    std::string m_what;
+};
+
+
