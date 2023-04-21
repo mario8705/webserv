@@ -30,6 +30,7 @@ void VirtualHost::HandleRequest(Request *request, Response *response)
     std::stringstream ss;
     FileRequestHandler *handler;
 
+    /*
     int fd;
 
     fd = open("/Users/alexislavaud/Downloads/The Batman [FR-EN] (2022).mkv", O_RDONLY | O_NONBLOCK);
@@ -41,11 +42,10 @@ void VirtualHost::HandleRequest(Request *request, Response *response)
 
     if (NULL == (handler = FileRequestHandler::Create(m_host->GetEventLoop(), response, fd)))
     {
-        /* TODO throw error */
         return ;
     }
 
-    response->SetAsyncHandler(handler);
+    response->SetAsyncHandler(handler);*/
 }
 
 const VirtualHost::tServerNameList &VirtualHost::GetServerNames() const

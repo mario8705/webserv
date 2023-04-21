@@ -4,6 +4,8 @@
 
 #include "DataBuffer.h"
 #include <cstdlib>
+#include <limits>
+#include <cstring>
 #include <unistd.h>
 #include <sys/socket.h>
 #include "BufferChain.h"
@@ -49,7 +51,7 @@ int DataBuffer::Write(const void *data, size_t n)
             bufsize = 4096;
         chain = NewMemorySegment(bufsize);
     }
-    memcpy(chain->m_buffer + chain->m_offset, data, n);
+    std::memcpy(chain->m_buffer + chain->m_offset, data, n);
     chain->m_offset += n;
     m_length += n;
     return n;
@@ -91,20 +93,17 @@ int DataBuffer::Read(int fd)
     if (!chain)
         chain = NewMemorySegment(4096);
     avail = m_readHighWatermark - m_length;
-    printf("Chain_before : %lu (R_WTMK: %zu, SZ: %zu)\n", avail, m_readHighWatermark, m_length);
     if (avail > chain->GetFreeSpace())
         avail = chain->GetFreeSpace();
     n = read(fd, chain->m_buffer + chain->m_offset, avail);
-    printf("Chain : %lu\n", avail);
     if (n > 0) {
         chain->m_offset += n;
         m_length += n;
     }
     else
     {
-        perror("read");
+        /* TODO perror("read"); */
     }
-    printf("Returned : %d\n", n);
     return static_cast<int>(n);
 }
 
@@ -127,7 +126,7 @@ int DataBuffer::FindEOL(BufferPtr &ptr) const
 
     off = 0;
     nl = false;
-    for (it = m_chains.cbegin(); it != m_chains.cend() && !nl; ++it)
+    for (it = m_chains.begin(); it != m_chains.end() && !nl; ++it)
     {
         chain = *it;
 

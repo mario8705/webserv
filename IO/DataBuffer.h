@@ -5,6 +5,7 @@
 #ifndef WEBSERV_DATABUFFER_H
 #define WEBSERV_DATABUFFER_H
 #include <cstdlib>
+#include <stdint.h>
 #include <string>
 #include <vector>
 

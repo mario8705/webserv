@@ -105,7 +105,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
     httpVersion = "HTTP/1.0";
     if (methodSep == std::string::npos)
     {
-        printf("Invalid request\n");
+        /* TODO invalid request */
         return ;
     }
     method = line.substr(0, methodSep);
@@ -127,14 +127,14 @@ void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::s
     tHttpVersionsMap::const_iterator versionsIt = m_httpVersions.find(httpVersion);
     if (versionsIt == m_httpVersions.end())
     {
-        printf("Invalid request : Unknown http version\n");
+        /* TODO printf("Invalid request : Unknown http version\n"); */
         return ;
     }
 
     tHttpMethodsMap::const_iterator methodsIt = m_methods.find(method);
     if (methodsIt == m_methods.end())
     {
-        printf("Invalid request : Unknown http method\n");
+        /* TODO printf("Invalid request : Unknown http method\n"); */
         return ;
     }
 

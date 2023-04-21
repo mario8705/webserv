@@ -4,17 +4,12 @@
 
 #include "BufferChain.h"
 
-static int active_chains = 0;
-
 BufferChain::BufferChain()
 {
-    printf("New chain\n");
-    ++active_chains;
 }
 
 BufferChain::~BufferChain()
 {
-    printf("Chain deleted (active: %d)\n", --active_chains);
     delete[] m_buffer;
 }
 
@@ -62,7 +57,7 @@ void BufferChain::ReleasePool() {
 
     for (it = m_pool.begin(); it != m_pool.end(); ++it)
         delete *it;
-    m_pool.erase(m_pool.begin(), it);
+    m_pool.clear();
 }
 
 std::vector<BufferChain *> BufferChain::m_pool;

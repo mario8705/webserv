@@ -42,10 +42,13 @@ void ServerHost::HandleConnection(int fd, struct sockaddr *addr, socklen_t addrl
 void ServerHost::DeferDeletion(HttpClientHandler *client) {
     tClientList::iterator it;
 
-    it = std::find(m_clients.begin(), m_clients.end(), client);
+    for (it = m_clients.begin(); it != m_clients.end(); ++it)
+    {
+        if (*it == client)
+            break ;
+    }
     if (it != m_clients.end()) {
         m_clients.erase(it);
-        printf("Disconnected %p\n", client);
         m_disconnectedClients.push_back(client);
     }
 }

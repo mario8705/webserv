@@ -20,7 +20,7 @@ ListenerEvent::~ListenerEvent()
 
 void ListenerEvent::NotifyRead()
 {
-    char addrbuf[SOCK_MAXADDRLEN];
+    char addrbuf[255];
     sockaddr *addr;
     socklen_t addrlen;
     int fd;

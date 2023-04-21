@@ -13,7 +13,7 @@ URL::~URL() {
 }
 
 URL URL::ParseURL(const std::string &url) {
-    printf("Parsing: %s\n", url.c_str());
+    //printf("Parsing: %s\n", url.c_str());
 
     return URL();
 }
@@ -48,7 +48,7 @@ std::string URL::Decode(const std::string &s) {
         }
         res.insert(res.end(), static_cast<char>(ch));
     }
-    printf("Decoded '%s' into '%s'\n", s.c_str(), res.c_str());
+ //   printf("Decoded '%s' into '%s'\n", s.c_str(), res.c_str());
     return res;
 }
 

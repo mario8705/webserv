@@ -4,8 +4,8 @@
 
 #ifndef WEBSERV_NETWORKADDRESS4_H
 #define WEBSERV_NETWORKADDRESS4_H
-#include <cstdint>
 #include <string>
+#include <stdint.h>
 
 /**
  * Holds an address/port pair in IPv4 format.

@@ -25,7 +25,6 @@ FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response
 
 FileRequestHandler::~FileRequestHandler()
 {
-    printf("File handler deleted\n");
     delete m_event;
 }
 

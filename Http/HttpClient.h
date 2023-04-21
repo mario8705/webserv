@@ -4,8 +4,8 @@
 
 #ifndef WEBSERV_HTTPCLIENT_H
 #define WEBSERV_HTTPCLIENT_H
-#include <cstdint>
 #include <string>
+#include <stdint.h>
 
 class IEventLoop;
 class BufferEvent;
