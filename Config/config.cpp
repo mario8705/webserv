@@ -132,69 +132,14 @@ void ConfigProperty::push_config(std::vector<Token *> tokens, std::vector<Config
     }
 }
 
-void is_line_valid(std::string line, int line_nbr)
-{
-    if (line[line.length() -1] != ';' && line[line.length() -1] != '{' && line[line.length() -1] != '}')
-    {
-        std::cout << line << " <= :: ";
-        throw syntax_error_line(" Syntax Error ::", line_nbr);
-    }
-}
-
-void is_config_valid()
-{
-    char ch;
-    int line_nbr = 1;
-    int openbracket_nbr = 0;
-    int closedbracket_nbr = 0;
-    std::string line;
-    std::string stringline;
-    std::string filename = "../config.conf";
-    std::ifstream file(filename.c_str());
-
-    while (file.get(ch))
-    {
-        if (ch == ' ' || ch == '\t')
-        {
-            file.get(ch);
-            while(isspace(ch) && !file.eof())
-                file.get(ch);
-        }
-        if (ch == '#')
-        {
-            while (ch != '\n')
-                file.get(ch);
-        }
-        if (ch == '\n')
-        {
-            //std::cout << line;
-            if (line.length() > 1)
-                is_line_valid(line, line_nbr);
-            line_nbr++;
-            line.clear();
-        }
-        if (ch == '{')
-            openbracket_nbr++;
-        if (ch == '}')
-            closedbracket_nbr++;
-        line += ch;
-    }
-    if (closedbracket_nbr != openbracket_nbr)
-        throw std::runtime_error("Brackets number problem");
-}
-
-#include <stack>
-
 int main()
 {
     try {
-
-        is_config_valid();
         std::vector<Token *> tokens;
         std::vector<ConfigProperty *> configs;
         Token::tokenization(&tokens);
         ConfigProperty::push_config(tokens, &configs);
-        std::cout << "---------------\nCONFIGS :: \n\n";
+        /*std::cout << "---------------\nCONFIGS :: \n\n";
         for (size_t i = 0; i < configs.size(); i++) {
             std::vector<std::string> tmp = configs[i]->getParams();
             std::vector<ConfigProperty *> tmp2 = configs[i]->getBodystring();
@@ -209,11 +154,7 @@ int main()
                     std::cout << std::endl;
                 }
             }
-        }
-    }
-    catch (syntax_error_line &e)
-    {
-        std::cout << e.what() << std::endl;
+        }*/
     }
     catch (std::exception &e)
     {
