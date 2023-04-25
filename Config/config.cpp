@@ -25,7 +25,6 @@ void Token::tokenization(std::vector<Token *> *tokens)
         {
             if (!line.empty())
                 tokens->push_back(new Token(line, kTokenType_Ident));
-            //tokens.push_back(new Token(line, ident));
             line.clear();
             while(isspace(ch) && !file.eof())
                 file.get(ch);
@@ -87,10 +86,7 @@ void Token::tokenization(std::vector<Token *> *tokens)
 
 /*          ----- CONFIG CLASS ----              */
 
-ConfigProperty::ConfigProperty(std::vector<std::string> Tokens) : _params(Tokens)
-{
-    //std::cout << "Config constructor" << std::endl;
-}
+ConfigProperty::ConfigProperty(std::vector<std::string> Tokens) : _params(Tokens) {}
 ConfigProperty::~ConfigProperty() {}
 
 std::vector<std::string> ConfigProperty::getParams() {
