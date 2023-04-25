@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#include <sys/wait.h>
 #include "CgiManager.hpp"
 
 CgiManager::CgiManager() {
@@ -31,61 +32,67 @@ CgiManager &CgiManager::operator=(const CgiManager &toAssign) {
     return *this;
 }
 
+#
+/**
+ * Si le CGI s'execute correctement, sa sortie standard est envoyee dans la string CgiManager->cgiResponse.
+ * @param cgiName = le Cgi doit se finir par .sh ou .php
+ * @throw CgiException::OpenException, CgiException::Dup2Exception, CgiException::ExecException
+ */
 void CgiManager::execute(const std::string &cgiName) { //todo: modifier le env original
-    int pid = fork();
-    int fds_in[2], fds_out[2];
-	const std::string cgiFileName("cgiFile.txt");
 
     convertEnvMap();
     char **env = convertEnvMap();
+	int fds_in[2], fds_out[2];
+	//const std::string cgiFileName("cgiFile.txt");
+    int cgiFd = open((CGI_PATH + cgiName).c_str(), O_RDWR);
+    if (cgiFd < 0)
+        throw CgiException::OpenException();
 
-
-	std::ofstream cgiFile(cgiFileName.c_str());
-	std::streambuf *oldCout = std::cout.rdbuf();
-    //pipe(fds_in);
     pipe(fds_out);
 
+    int pid = fork();
     if (pid == 0)
     {
         close(fds_out[0]);
-        dup2(fds_out[1], STDOUT_FILENO);
+
+        if (dup2(cgiFd, STDIN_FILENO) == -1)
+            throw CgiException::Dup2Exception();
+        close(cgiFd);
+
+        if (dup2(fds_out[1], STDOUT_FILENO) == -1)
+            throw CgiException::Dup2Exception();
         close(fds_out[1]);
-        std::string command = PHP_CMD " " + cgiName;
-        std::cerr << "CGI is executed: " << std::boolalpha << std::system(command.c_str()) << std::endl;
-        exit(EXIT_SUCCESS);
+        std::string executor;
+        if (cgiName.rfind(".php") != std::string::npos)
+            executor = PHP_CMD;
+        else if (cgiName.rfind(".sh") != std::string::npos)
+            executor = BASH_CMD;
+        else
+            throw CgiException::BadFormatException();
 
-        //dup2(fds_in[0], STDIN_FILENO);
-        /*int cgiFD = ::fileno(cgiFile);
-        std::string fullExecutablePath(CGI_PATH + cgiName);
-        char *args[] ={const_cast<char *>(fullExecutablePath.c_str()), NULL};
-       	std::cout.rdbuf(cgiFile.rdbuf()); //dup2 like
-        std::cerr << "CGI TO EXEC:" << args[0] << std::endl;
-
-        execve("/bin/php", args, env);
-        std::cerr << "<><><><<<<<>CGI EXCEPTION<>>>>>>>>>>>><><><><>\n";
-        exit(2);*/
-    } //todo: recuperer les informations du CGI et les enregistrer dans cgiResponse;
+        std::string command = " " CGI_PATH + cgiName;
+        char *arg[] = { const_cast<char *>(command.c_str()), NULL};
+        execve(executor.c_str(), arg, env);
+        throw CgiException::ExecException();
+    }
     else
     {
-        close(fds_out[1]); // on ferme l'écriture du pipe dans le processus parent
-        std::cout << "\nCHOCAPIC\n";
-        char buffer[4096];
+        close(fds_out[1]);
+        close(cgiFd);
         ssize_t n;
+        char buffer[BUFSIZ];
         while ((n = read(fds_out[0], buffer, sizeof(buffer))) > 0) {
-            // écriture de la sortie dans un fichier
-            int outputFd = open("output.txt", O_WRONLY | O_CREAT | O_APPEND, 0644);
-            write(outputFd, buffer, n);
-            close(outputFd);
+            write(1, buffer, n);
+            cgiResponse += buffer;
         }
         close(fds_out[0]);
     }
-	std::cout.rdbuf(oldCout);
-	convertCgiFileToCgiResponse(cgiFileName);
+    while (waitpid(pid, NULL, 0) != -1);
+    //convertCgiFileToCgiResponse(cgiFileName);
 
     for (size_t i = 0; env[i]; i++)
         delete[] env[i];
     delete[] env;
-	cgiFile.close();
 }
 
 char ** CgiManager::convertEnvMap() {
@@ -128,4 +135,28 @@ void CgiManager::convertCgiFileToCgiResponse(const std::string &cgiFileName)
 const std::string &CgiManager::getCgiResponse() const
 {
 	return cgiResponse;
+}
+
+const char *CgiManager::CgiException::ForkException::what() const throw() {
+    return "Fork failed\n";
+}
+
+const char *CgiManager::CgiException::PipeException::what() const throw() {
+    return "Pipe failed\n";
+}
+
+const char *CgiManager::CgiException::ExecException::what() const throw() {
+    return "Execve failed\n";
+}
+
+const char *CgiManager::CgiException::Dup2Exception::what() const throw() {
+    return "Dup2 failed\n";
+}
+
+const char *CgiManager::CgiException::OpenException::what() const throw() {
+    return "File to open not found\n";
+}
+
+const char *CgiManager::CgiException::BadFormatException::what() const throw() {
+    return "The CGI isn't a .sh either a .php script\n";
 }

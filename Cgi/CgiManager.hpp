@@ -11,6 +11,7 @@
 
 #define CGI_PATH "cgi-bin/"
 #define PHP_CMD "/bin/php"
+#define BASH_CMD "/bin/bash"
 
 class CgiManager {
 
@@ -31,6 +32,45 @@ public:
 
 	char ** convertEnvMap();
 	const std::string &getCgiResponse() const;
+
+    class CgiException: public std::exception
+    {
+
+        virtual const char *what() const throw() = 0;
+
+    public:
+        class ForkException: public std::exception
+        {
+        public:
+            virtual const char *what() const throw();
+        };
+        class PipeException: public std::exception
+        {
+        public:
+            virtual const char *what() const throw();
+        };
+        class ExecException: public std::exception
+        {
+        public:
+            virtual const char *what() const throw();
+        };
+        class Dup2Exception: public std::exception
+        {
+        public:
+            virtual const char *what() const throw();
+        };
+        class OpenException: public std::exception
+        {
+        public:
+            virtual const char *what() const throw();
+        };
+        class BadFormatException: public std::exception
+        {
+        public:
+            virtual const char *what() const throw();
+        };
+
+    };
 };
 
 
