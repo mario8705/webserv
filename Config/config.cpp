@@ -1,10 +1,7 @@
 #include "config.hpp"
 
 /*          ----- TOKEN CLASS ----              */
-Token::Token(std::string token, TokenType tokentype) : _Token(token), _tokenType(tokentype)
-{
-    //std::cout << "Token creation\n";
-}
+Token::Token(std::string token, TokenType tokentype) : _Token(token), _tokenType(tokentype) {}
 Token::~Token() {}
 TokenType Token::getType() {return(_tokenType);}
 std::string Token::getToken() {return (_Token);}
@@ -19,7 +16,7 @@ void Token::tokenization(std::vector<Token *> *tokens)
     char ch;
     std::string line;
     std::string stringline;
-    std::string filename = "../config.conf";
+    std::string filename = "config.conf";
     std::ifstream file(filename.c_str());
 
     while (file.get(ch))
