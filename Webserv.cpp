@@ -53,6 +53,8 @@ bool Webserv::CreateServer(NetworkAddress4 addr)
 
     host = new ServerHost(m_eventLoop);
 
+    /* TODO read configuration file to extract a list of virtual hosts */
+
     VirtualHost *vhost1 = new VirtualHost(host);
     vhost1->m_serverNames.push_back("localhost");
 
