@@ -69,9 +69,15 @@ void bodyparsing (std::string body)
     }
     for (std::map<std::string, std::string>::iterator it = m_body.begin(); it != m_body.end(); ++it)
     {
-        std::cout << it->first << " = " << it->second << std::endl;
+        html_table += "<tr>\n<th>";
+        html_table += it->first;
+        html_table += "</th>\n <th>";
+        html_table += it->second;
+        html_table += "</th>\n </tr>\n";
     }
-
+    html_table += "</table>\n";
+    std::cout << html_table << std::cout;
+    //std::cout << m_body.size() << std::endl;
 }
 
 void handle_connection(int fd)
