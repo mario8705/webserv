@@ -10,21 +10,14 @@ Token::~Token()
 {
 }
 
-TokenType Token::getType()
+TokenType Token::getType() const
 {
     return _tokenType;
 }
 
-std::string Token::getToken()
+std::string Token::getToken() const
 {
     return _Token;
-}
-
-std::string Token::getTypeString()
-{
-    static const char* typeNames[] = {"ident", "left bracket", "right bracket", "semicolon", "string"};
-
-    return typeNames[_tokenType];
 }
 
 void Token::tokenization(std::vector<Token *> *tokens)

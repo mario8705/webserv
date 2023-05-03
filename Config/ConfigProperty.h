@@ -13,7 +13,7 @@ public:
 
     void add_body(ConfigProperty *value);
 
-    const std::vector<ConfigProperty *> &getBody();
+    const std::vector<ConfigProperty *> &getBody() const;
     const std::vector<std::string> &getParams() const;
 
     static void push_config(std::vector<Token *> tokens, std::vector<ConfigProperty *> *config);
