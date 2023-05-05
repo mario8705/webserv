@@ -9,7 +9,7 @@
 #include "ConnectionHandler.h"
 
 ListenerEvent::ListenerEvent(IConnectionHandler *handler, int fd)
-        : IOEventBase(fd), m_handler(handler)
+        : IOEvent(fd), m_handler(handler)
 {
 }
 
@@ -32,6 +32,10 @@ void ListenerEvent::NotifyRead()
     {
         m_handler->HandleConnection(fd, addr, addrlen);
     }
+}
+
+void ListenerEvent::NotifyWrite()
+{
 }
 
 int fd_set_non_blocking(int fd)
@@ -82,4 +86,9 @@ fail:
 bool ListenerEvent::IsReadable() const
 {
     return true;
+}
+
+bool ListenerEvent::IsWritable() const
+{
+    return false;
 }

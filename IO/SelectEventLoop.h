@@ -10,13 +10,13 @@
 class SelectEventLoop : public IEventLoop
 {
 public:
-    typedef std::map<int, IIOEvent *> tEventMap;
+    typedef std::map<int, IOEvent *> tEventMap;
 
     SelectEventLoop();
     ~SelectEventLoop();
 
-    void RegisterEvent(IIOEvent *evt);
-    void UnregisterEvent(IIOEvent *evt);
+    void RegisterEvent(IOEvent *evt);
+    void UnregisterEvent(IOEvent *evt);
     
     bool LoopOnce();
 

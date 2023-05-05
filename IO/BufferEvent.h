@@ -6,7 +6,7 @@
 #define WEBSERV_BUFFEREVENT_H
 
 #include <sys/socket.h>
-#include "IOEventBase.h"
+#include "IOEvent.h"
 
 class DataBuffer;
 class IEventLoop;
@@ -15,7 +15,7 @@ class IBufferEventHandler;
 #define kEvent_Read 1
 #define kEvent_Write 2
 
-class BufferEvent : public IOEventBase
+class BufferEvent : public IOEvent
 {
 public:
     BufferEvent(IEventLoop *eventLoop, IBufferEventHandler *handler, int fd);
