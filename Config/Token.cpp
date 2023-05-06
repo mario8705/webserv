@@ -20,13 +20,15 @@ std::string Token::getToken() const
     return _Token;
 }
 
-void Token::tokenization(const std::string &filename, std::vector<Token *> &tokens)
+bool Token::tokenization(const std::string &filename, std::vector<Token *> &tokens)
 {
     std::ifstream file(filename);
     std::string stringline;
     std::string line;
     char ch;
 
+    if (!file.is_open())
+        return false;
     while (file.get(ch))
     {
         if (std::isspace(ch))
@@ -90,4 +92,5 @@ void Token::tokenization(const std::string &filename, std::vector<Token *> &toke
         if (ch != ';' && ch != '\n' && ch != '#' && ch!= '\'' && ch != '{' && ch != '}' && !file.eof())
             line += ch;
     }
+    return true;
 }
