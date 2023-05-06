@@ -25,9 +25,6 @@ HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *inp
     m_methods.insert(std::make_pair("DELETE", kHttpMethod_Delete));
     m_methods.insert(std::make_pair("HEAD", kHttpMethod_Head));
     m_methods.insert(std::make_pair("OPTIONS", kHttpMethod_Options));
-
-    m_httpVersions.insert(std::make_pair("HTTP/1.0", kHttpVersion_1_0));
-    m_httpVersions.insert(std::make_pair("HTTP/1.1", kHttpVersion_1_1));
 }
 
 HttpProtocolCodec::~HttpProtocolCodec()
@@ -48,7 +45,7 @@ void HttpProtocolCodec::ProcessDataInput()
             ParseRequestHeader(line);
             m_requestHeaderParsed = true;
 
-            if (kHttpVersion_1_0 == m_httpVersion)
+            if (HttpVersion::kHttpVersion_1_0 == m_httpVersion)
             {
                 dispatchRequest = true;
             }
@@ -124,8 +121,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
 void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::string &rawPath,
                                          const std::string &httpVersion)
 {
-    tHttpVersionsMap::const_iterator versionsIt = m_httpVersions.find(httpVersion);
-    if (versionsIt == m_httpVersions.end())
+    if (!m_httpVersion.Parse(httpVersion))
     {
         /* TODO printf("Invalid request : Unknown http version\n"); */
         return ;
@@ -139,7 +135,6 @@ void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::s
     }
 
     m_method = methodsIt->second;
-    m_httpVersion = versionsIt->second;
     m_rawPath = rawPath;
     utils::trim(m_rawPath);
 }
@@ -167,23 +162,9 @@ void HttpProtocolCodec::ParseHeader(const std::string &line)
 
 void HttpProtocolCodec::WriteResponseHeader(int status, const std::string &statusMessage)
 {
-    tHttpVersionsMap::const_iterator it;
-    std::string version;
     std::stringstream ss;
 
-    for (it = m_httpVersions.begin(); it != m_httpVersions.end(); ++it)
-    {
-        if (it->second == m_httpVersion)
-        {
-            version = it->first;
-            break ;
-        }
-    }
-    if (it == m_httpVersions.end())
-    {
-        /* TODO Should never happend */
-    }
-    ss << version << " " << status << " " << statusMessage << "\r\n";
+    ss << m_httpVersion << " " << status << " " << statusMessage << "\r\n";
     m_outputBuffer->PutString(ss.str());
 }
 
@@ -239,12 +220,12 @@ void HttpProtocolCodec::FinalizeResponse()
     delete m_asyncHandler;
     m_asyncHandler = NULL;
 
-    if (kHttpVersion_1_0 == m_httpVersion)
+    if (HttpVersion::kHttpVersion_1_0 == m_httpVersion)
     {
         m_handler->Disconnect(true);
         return ;
     }
-    else if (kHttpVersion_1_1 == m_httpVersion)
+    else if (HttpVersion::kHttpVersion_1_1 == m_httpVersion)
     {
         it = m_headers.find("Connection");
 

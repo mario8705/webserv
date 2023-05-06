@@ -19,7 +19,6 @@ class HttpProtocolCodec
 {
 public:
     typedef std::map<std::string, HttpMethod> tHttpMethodsMap;
-    typedef std::map<std::string, HttpVersion> tHttpVersionsMap;
     typedef std::map<std::string, std::string> tHeaderMap;
 
     explicit HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output);
@@ -57,7 +56,6 @@ private:
     DataBuffer *m_inputBuffer;
     DataBuffer *m_outputBuffer;
     tHttpMethodsMap m_methods;
-    tHttpVersionsMap m_httpVersions;
     tHeaderMap m_headers;
     bool m_requestHeaderParsed;
     HttpMethod m_method;

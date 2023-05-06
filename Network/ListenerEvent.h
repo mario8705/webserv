@@ -4,19 +4,21 @@
 
 #ifndef WEBSERV_LISTENEREVENT_H
 #define WEBSERV_LISTENEREVENT_H
-#include "../IO/IOEventBase.h"
+#include "../IO/IOEvent.h"
 #include <sys/socket.h>
 
 class IConnectionHandler;
 
-class ListenerEvent : public IOEventBase
+class ListenerEvent : public IOEvent
 {
 public:
     ~ListenerEvent();
 
     void NotifyRead();
+    void NotifyWrite();
 
     bool IsReadable() const;
+    bool IsWritable() const;
 
     static ListenerEvent *
     CreateAndBind(IConnectionHandler *handler, struct sockaddr *addr, socklen_t addrlen, int backlog);
