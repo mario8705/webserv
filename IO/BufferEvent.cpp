@@ -23,7 +23,6 @@ BufferEvent::~BufferEvent()
     m_eventLoop->UnregisterEvent(this);
     delete m_inputBuffer;
     delete m_outputBuffer;
-    ::close(m_fd);
 }
 
 void BufferEvent::NotifyRead() {

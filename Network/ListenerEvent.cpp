@@ -15,7 +15,6 @@ ListenerEvent::ListenerEvent(IConnectionHandler *handler, int fd)
 
 ListenerEvent::~ListenerEvent()
 {
-    ::close(m_fd);
 }
 
 void ListenerEvent::NotifyRead()
