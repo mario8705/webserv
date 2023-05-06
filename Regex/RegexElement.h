@@ -23,12 +23,14 @@ enum RegexElementType
     kRegexElementType_AssertStart,
     kRegexElementType_AssertEnd,
     kRegexElementType_Range,
+    kRegexElementType_CaptureGroup,
 };
 
 struct RegexElement
 {
     RegexElementType type;
     std::vector<Range> ranges;
+    std::vector<RegexElement> elements;
     int min;
     int max;
 
@@ -42,6 +44,11 @@ struct RegexElement
     void AddRange(int start, int end)
     {
         ranges.push_back(Range(start, end));
+    }
+
+    void SetElements(std::vector<RegexElement> &elements)
+    {
+        elements.swap(this->elements);
     }
 
     void SetMinMax(int min, int max)

@@ -5,6 +5,7 @@
 #include "Pattern.h"
 #include <vector>
 #include "RegexException.h"
+#include "Matcher.h"
 
 Pattern::Pattern(std::vector<RegexElement> &elements)
 {
@@ -66,95 +67,109 @@ bool Pattern::Match(const std::string &input)
     return false;
 }
 
+Matcher *Pattern::CreateMatcher(const std::string &input)
+{
+    return new Matcher(m_elements, input);
+}
+
 Pattern *Pattern::Compile(const std::string &regex)
 {
     size_t i;
     size_t pos;
     std::vector<RegexElement> elements;
 
-    for (i = 0; i < regex.size(); )
-    {
-        if (regex[i] == '^')
-        {
+    DecodeElements(elements, regex, 0, regex.size());
+    return new Pattern(elements);
+}
+
+void Pattern::DecodeElements(std::vector<RegexElement> &elements, const std::string &regex,
+                             size_t head, size_t tail)
+{
+    size_t pos;
+
+    while (head < tail) {
+        if (regex[head] == '^') {
             elements.push_back(RegexElement(kRegexElementType_AssertStart));
-            ++i;
-        }
-        else if (regex[i] == '$')
-        {
+            ++head;
+        } else if (regex[head] == '$') {
             elements.push_back(RegexElement(kRegexElementType_AssertEnd));
-            ++i;
-        }
-        else if (regex[i] == '[')
-        {
+            ++head;
+        } else if (regex[head] == '[') {
             do {
-                pos = regex.find(']', i + 1);
+                pos = regex.find(']', head + 1);
             } while (std::string::npos != pos && regex[pos - 1] == '\\');
             if (std::string::npos == pos)
                 throw RegexException("[ Character class missing closing bracket");
             RegexElement element(kRegexElementType_Range);
-            DecodeRangeList(element, regex, i + 1, pos);
+            DecodeRangeList(element, regex, head + 1, pos);
             elements.push_back(element);
-            i = pos + 1;
-        }
-        else
-        {
+            head = pos + 1;
+        } else if (regex[head] == '(') {
+            do {
+                pos = regex.find(')', head + 1);
+            } while (std::string::npos != pos && regex[pos - 1] == '\\');
+            if (std::string::npos == pos)
+                throw RegexException("");
+            RegexElement element(kRegexElementType_CaptureGroup);
+            std::vector<RegexElement> groupElements;
+            DecodeElements(groupElements, regex, head + 1, pos);
+            element.SetElements(groupElements);
+            elements.push_back(element);
+            head = pos + 1;
+        } else {
             RegexElement element(kRegexElementType_Range);
 
-            if (regex[i] == '\\')
-            {
-                if (++i >= regex.size())
+            if (regex[head] == '\\') {
+                if (++head >= tail)
                     throw RegexException("Pattern may not end with a trailing backslash");
 
-                switch (regex[i])
-                {
-                /**
-                 * Matches a digit (equivalent to [0-9])
-                 */
-                case 'd':
-                    element.AddRange('0', '9');
-                    break ;
+                switch (regex[head]) {
+                    /**
+                     * Matches a digit (equivalent to [0-9])
+                     */
+                    case 'd':
+                        element.AddRange('0', '9');
+                        break;
 
-                /**
-                 * Matches any whitespace character (equivalent to [\r\n\t\f\v ])
-                 */
-                case 's':
-                    element.AddRange(' ', ' ');
-                    element.AddRange('\t', '\t');
-                    element.AddRange('\r', '\r');
-                    element.AddRange('\v', '\v');
-                    element.AddRange('\n', '\n');
-                    element.AddRange('\f', '\f');
-                    break ;
+                        /**
+                         * Matches any whitespace character (equivalent to [\r\n\t\f\v ])
+                         */
+                    case 's':
+                        element.AddRange(' ', ' ');
+                        element.AddRange('\t', '\t');
+                        element.AddRange('\r', '\r');
+                        element.AddRange('\v', '\v');
+                        element.AddRange('\n', '\n');
+                        element.AddRange('\f', '\f');
+                        break;
 
-                case '[':
-                case ']':
-                case '.':
-                case '(':
-                case ')':
-                case '^':
-                case '$':
-                case '{':
-                case '}':
-                case '+':
-                case '*':
-                case '?':
-                    element.AddRange(regex[i], regex[i]);
-                    break ;
+                    case '[':
+                    case ']':
+                    case '.':
+                    case '(':
+                    case ')':
+                    case '^':
+                    case '$':
+                    case '{':
+                    case '}':
+                    case '+':
+                    case '*':
+                    case '?':
+                        element.AddRange(regex[head], regex[head]);
+                        break;
 
-                default:
-                    throw RegexException("This token has no special meaning and has thus been rendered erroneous");
+                    default:
+                        throw RegexException("This token has no special meaning and has thus been rendered erroneous");
                 }
-            }
-            else
-            {
-                element.AddRange(regex[i], regex[i]);
+            } else {
+                element.AddRange(regex[head], regex[head]);
             }
             elements.push_back(element);
-            ++i;
+            ++head;
         }
-        i = DecodeOccurenceModifier(elements.back(), regex, i);
+        if (head < tail)
+            head = DecodeOccurenceModifier(elements.back(), regex, head);
     }
-    return new Pattern(elements);
 }
 
 void Pattern::DecodeRangeList(RegexElement &element,
@@ -237,7 +252,7 @@ size_t Pattern::DecodeOccurenceModifier(RegexElement &element,
     {
         return head;
     }
-    if (kRegexElementType_Range != element.type)
+    if (kRegexElementType_Range != element.type && kRegexElementType_CaptureGroup != element.type)
     {
         throw RegexException("The preceding token is not quantifiable");
     }
