@@ -30,14 +30,19 @@ void ConfigProperty::push_config(const std::vector<Token *> &tokens, std::vector
 {
     std::vector<std::string> tmp;
     std::stack<ConfigProperty *> stck;
+    ConfigProperty *property;
 
     for (size_t i = 0; i < tokens.size(); i++)
     {
         if (tokens[i]->getType() != kTokenType_LeftBracket && tokens[i]->getType() != kTokenType_RightBracket)
             tmp.push_back(tokens[i]->getToken());
         if (tokens[i]->getType() == kTokenType_LeftBracket) {
-            stck.push(new ConfigProperty(tmp));
-            config.push_back(stck.top());
+            property = new ConfigProperty(tmp);
+            if (stck.empty())
+                config.push_back(property);
+            else
+                stck.top()->add_body(stck.top());
+            stck.push(property);
             tmp.clear();
         }
         else if (tokens[i]->getType() == kTokenType_LeftBracket)
