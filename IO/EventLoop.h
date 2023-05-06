@@ -5,15 +5,15 @@
 #ifndef WEBSERV_EVENTLOOP_H
 #define WEBSERV_EVENTLOOP_H
 
-class IIOEvent;
+class IOEvent;
 
 class IEventLoop
 {
 public:
     virtual ~IEventLoop() {}
 
-    virtual void RegisterEvent(IIOEvent *evt) = 0;
-    virtual void UnregisterEvent(IIOEvent *evt) = 0;
+    virtual void RegisterEvent(IOEvent *evt) = 0;
+    virtual void UnregisterEvent(IOEvent *evt) = 0;
 
     /**
      * Block until at least one event occured or a signal interrupts the handler.
