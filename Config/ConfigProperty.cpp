@@ -26,7 +26,7 @@ const std::vector<ConfigProperty *> &ConfigProperty::getBody() const
     return (_body);
 }
 
-void ConfigProperty::push_config(std::vector<Token *> tokens, std::vector<ConfigProperty *> *config)
+void ConfigProperty::push_config(const std::vector<Token *> &tokens, std::vector<ConfigProperty *> &config)
 {
     std::vector<std::string> tmp;
     std::stack<ConfigProperty *> stck;
@@ -37,7 +37,7 @@ void ConfigProperty::push_config(std::vector<Token *> tokens, std::vector<Config
             tmp.push_back(tokens[i]->getToken());
         if (tokens[i]->getType() == kTokenType_LeftBracket) {
             stck.push(new ConfigProperty(tmp));
-            config->push_back(stck.top());
+            config.push_back(stck.top());
             tmp.clear();
         }
         else if (tokens[i]->getType() == kTokenType_LeftBracket)
@@ -46,7 +46,7 @@ void ConfigProperty::push_config(std::vector<Token *> tokens, std::vector<Config
             if (!stck.empty()) {
                 stck.top()->add_body(new ConfigProperty(tmp));
             } else
-                config->push_back(new ConfigProperty(tmp));
+                config.push_back(new ConfigProperty(tmp));
             tmp.clear();
         }
     }

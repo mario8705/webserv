@@ -20,32 +20,31 @@ std::string Token::getToken() const
     return _Token;
 }
 
-void Token::tokenization(std::vector<Token *> *tokens)
+void Token::tokenization(const std::string &filename, std::vector<Token *> &tokens)
 {
-    char ch;
-    std::string line;
+    std::ifstream file(filename);
     std::string stringline;
-    std::string filename = "config.conf";
-    std::ifstream file(filename.c_str());
+    std::string line;
+    char ch;
 
     while (file.get(ch))
     {
-        if (isspace(ch))
+        if (std::isspace(ch))
         {
             if (!line.empty())
-                tokens->push_back(new Token(line, kTokenType_Ident));
+                tokens.push_back(new Token(line, kTokenType_Ident));
             line.clear();
-            while(isspace(ch) && !file.eof())
+            while (std::isspace(ch) && !file.eof())
                 file.get(ch);
         }
         if (ch == ';')
         {
             if (!line.empty())
-                tokens->push_back(new Token(line, kTokenType_Ident));
+                tokens.push_back(new Token(line, kTokenType_Ident));
             line.clear();
-            tokens->push_back(new Token(";", kTokenType_Semicolon));
+            tokens.push_back(new Token(";", kTokenType_Semicolon));
             file.get(ch);
-            while(isspace(ch) && !file.eof())
+            while (std::isspace(ch) && !file.eof())
             {
                 file.get(ch);
             }
@@ -54,23 +53,23 @@ void Token::tokenization(std::vector<Token *> *tokens)
         {
             while (ch != '\n' && !file.eof())
                 file.get(ch);
-            while(isspace(ch) && !file.eof())
+            while (std::isspace(ch) && !file.eof())
                 file.get(ch);
         }
         if (ch == '{')
         {
             if (!line.empty())
-                tokens->push_back(new Token(line, kTokenType_Ident));
-            tokens->push_back(new Token("{", kTokenType_LeftBracket));
+                tokens.push_back(new Token(line, kTokenType_Ident));
+            tokens.push_back(new Token("{", kTokenType_LeftBracket));
             line.clear();
-            while(isspace(ch) && !file.eof())
+            while (std::isspace(ch) && !file.eof())
                 file.get(ch);
         }
         if (ch == '}')
         {
-            tokens->push_back(new Token("}", kTokenType_RightBracket));
+            tokens.push_back(new Token("}", kTokenType_RightBracket));
             line.clear();
-            while(isspace(ch) && !file.eof())
+            while (std::isspace(ch) && !file.eof())
                 file.get(ch);
         }
         if (ch == '\'')
@@ -83,9 +82,9 @@ void Token::tokenization(std::vector<Token *> *tokens)
                 file.get(ch);
             }
             stringline += ch;
-            tokens->push_back(new Token(stringline, kTokenType_String));
+            tokens.push_back(new Token(stringline, kTokenType_String));
             stringline.clear();
-            while(isspace(ch) && !file.eof())
+            while (std::isspace(ch) && !file.eof())
                 file.get(ch);
         }
         if (ch != ';' && ch != '\n' && ch != '#' && ch!= '\'' && ch != '{' && ch != '}' && !file.eof())

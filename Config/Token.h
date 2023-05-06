@@ -13,7 +13,7 @@ public:
     TokenType getType() const;
     std::string getToken() const;
 
-    static void tokenization(std::vector<Token *>*tokens);
+    static void tokenization(const std::string &filename, std::vector<Token *> &tokens);
 
 private:
     TokenType _tokenType;

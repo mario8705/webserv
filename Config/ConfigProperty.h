@@ -16,7 +16,7 @@ public:
     const std::vector<ConfigProperty *> &getBody() const;
     const std::vector<std::string> &getParams() const;
 
-    static void push_config(std::vector<Token *> tokens, std::vector<ConfigProperty *> *config);
+    static void push_config(const std::vector<Token *> &tokens, std::vector<ConfigProperty *> &config);
 
 private:
     std::vector<std::string> _params;
