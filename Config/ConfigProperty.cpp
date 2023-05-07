@@ -13,6 +13,12 @@ ConfigProperty::ConfigProperty(const std::vector<std::string> &tokens)
 
 ConfigProperty::~ConfigProperty()
 {
+    size_t i;
+
+    for (i = 0; i < _body.size(); ++i)
+    {
+        delete _body[i];
+    }
 }
 
 const std::vector<std::string> &ConfigProperty::getParams() const
