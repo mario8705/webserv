@@ -9,7 +9,7 @@
 #include "EventLoop.h"
 
 BufferEvent::BufferEvent(IEventLoop *eventLoop, IBufferEventHandler *handler, int fd)
-    : IOEventBase(fd), m_eventLoop(eventLoop), m_handler(handler)
+    : IOEvent(fd), m_eventLoop(eventLoop), m_handler(handler)
 {
     m_inputBuffer = new DataBuffer;
     m_outputBuffer = new DataBuffer;
@@ -23,7 +23,6 @@ BufferEvent::~BufferEvent()
     m_eventLoop->UnregisterEvent(this);
     delete m_inputBuffer;
     delete m_outputBuffer;
-    ::close(m_fd);
 }
 
 void BufferEvent::NotifyRead() {

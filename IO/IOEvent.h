@@ -6,12 +6,12 @@
 #define WEBSERV_IOEVENT_H
 
 /**
- * The base interface for receiving I/O events from the event loop.
+ * The base class for receiving I/O events from the event loop.
  */
-class IIOEvent
+class IOEvent
 {
 public:
-    virtual ~IIOEvent() {}
+    virtual ~IOEvent();
 
     /**
      * Invoked when IsReadable() returns true and data available in the file descriptor.
@@ -41,7 +41,12 @@ public:
      * Simply returns the file descriptor to be monitored by the event loop.
      * @return the file descriptor to be monitored
      */
-    virtual int GetFileDescriptor() const = 0;
+    virtual int GetFileDescriptor() const;
+
+protected:
+    explicit IOEvent(int fd);
+
+    int m_fd;
 };
 
 #endif //WEBSERV_IOEVENT_H

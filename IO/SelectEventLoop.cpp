@@ -17,7 +17,7 @@ SelectEventLoop::~SelectEventLoop()
 {
 }
 
-void SelectEventLoop::RegisterEvent(IIOEvent *evt)
+void SelectEventLoop::RegisterEvent(IOEvent *evt)
 {
     int fd;
     tEventMap::iterator it;
@@ -30,7 +30,7 @@ void SelectEventLoop::RegisterEvent(IIOEvent *evt)
     }
 }
 
-void SelectEventLoop::UnregisterEvent(IIOEvent *evt)
+void SelectEventLoop::UnregisterEvent(IOEvent *evt)
 {
     tEventMap::iterator it;
 
@@ -44,13 +44,13 @@ void SelectEventLoop::UnregisterEvent(IIOEvent *evt)
 bool SelectEventLoop::LoopOnce()
 {
     fd_set rdset, wrset;
-    IIOEvent *evt;
+    IOEvent *evt;
     int fd;
     int nfds;
     int n;
     tEventMap::iterator it;
-    std::vector<IIOEvent *> readEvents;
-    std::vector<IIOEvent *> writeEvents;
+    std::vector<IOEvent *> readEvents;
+    std::vector<IOEvent *> writeEvents;
     size_t i;
 
     FD_ZERO(&rdset);
