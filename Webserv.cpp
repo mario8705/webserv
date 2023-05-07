@@ -217,6 +217,7 @@ void Webserv::ParseHttpBlock(ConfigProperty *httpBlock)
     PropertyConsumer httpConsumer(httpBlock);
 
     httpConsumer.AcceptBlocks("types", &Webserv::ParseTypesBlock, this);
+    httpConsumer.AcceptBlocks("server", &Webserv::ParseServerBlock, this);
 }
 
 struct mime_validator
@@ -235,6 +236,11 @@ void Webserv::ParseTypesBlock(ConfigProperty *typesBlock)
     PropertyConsumer typesConsumer(typesBlock);
 
     typesConsumer.AcceptProperties("", &Webserv::ParseMimeType, this, mime_validator());
+}
+
+void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
+{
+
 }
 
 void Webserv::ParseMimeType(ConfigProperty *mime)

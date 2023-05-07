@@ -85,6 +85,7 @@ private:
     void ParseConfig(ConfigProperty *rootBlock);
     void ParseHttpBlock(ConfigProperty *httpBlock);
     void ParseTypesBlock(ConfigProperty *typesBlock);
+    void ParseServerBlock(ConfigProperty *serverBlock);
 
     void ParseMimeType(ConfigProperty *mime);
 };
