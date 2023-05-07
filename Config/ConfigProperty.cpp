@@ -2,6 +2,10 @@
 #include <stack>
 #include "Token.h"
 
+ConfigProperty::ConfigProperty()
+{
+}
+
 ConfigProperty::ConfigProperty(const std::vector<std::string> &tokens)
     : _params(tokens)
 {
@@ -26,12 +30,13 @@ const std::vector<ConfigProperty *> &ConfigProperty::getBody() const
     return (_body);
 }
 
-void ConfigProperty::push_config(const std::vector<Token *> &tokens, std::vector<ConfigProperty *> &config)
+ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
 {
     std::vector<std::string> tmp;
     std::stack<ConfigProperty *> stck;
     ConfigProperty *property;
 
+    stck.push(new ConfigProperty);
     for (size_t i = 0; i < tokens.size(); i++)
     {
         if (tokens[i]->getType() == kTokenType_Ident ||
@@ -42,32 +47,37 @@ void ConfigProperty::push_config(const std::vector<Token *> &tokens, std::vector
         else if (tokens[i]->getType() == kTokenType_LeftBracket)
         {
             property = new ConfigProperty(tmp);
-            if (stck.empty())
-                config.push_back(property);
-            else
-                stck.top()->add_body(property);
+            stck.top()->add_body(property);
             stck.push(property);
             tmp.clear();
         }
         else if (tokens[i]->getType() == kTokenType_RightBracket)
         {
+            if (stck.size() < 2)
+            {
+                /* TODO error */
+            }
             stck.pop();
         }
         else if (tokens[i]->getType() == kTokenType_Semicolon)
         {
             if (!tmp.empty())
             {
-                if (stck.empty())
-                    config.push_back(new ConfigProperty(tmp));
-                else
-                    stck.top()->add_body(new ConfigProperty(tmp));
+                stck.top()->add_body(new ConfigProperty(tmp));
                 tmp.clear();
             }
         }
     }
+    return stck.top();
 }
 
-bool ConfigProperty::IsBlockSection(const std::string &name) const
+const std::string &ConfigProperty::GetName() const
 {
-    return (!_params.empty() && name == _params[0]);
+    return _params[0];
+}
+
+bool ConfigProperty::IsBlock() const
+{
+    /* TODO http {} is considered a property and not a block, change this ? */
+    return !_body.empty();
 }

@@ -8,6 +8,7 @@ class Token;
 class ConfigProperty
 {
 public:
+    ConfigProperty();
     explicit ConfigProperty(const std::vector<std::string> &tokens);
     ~ConfigProperty();
 
@@ -16,9 +17,10 @@ public:
     const std::vector<ConfigProperty *> &getBody() const;
     const std::vector<std::string> &getParams() const;
 
-    bool IsBlockSection(const std::string &name) const;
+    const std::string &GetName() const;
+    bool IsBlock() const;
 
-    static void push_config(const std::vector<Token *> &tokens, std::vector<ConfigProperty *> &config);
+    static ConfigProperty *push_config(const std::vector<Token *> &tokens);
 
 private:
     std::vector<std::string> _params;

@@ -82,8 +82,11 @@ private:
     tMimeTypesDatabase m_mimeTypes;
     std::string m_defaultMimeType;
 
+    void ParseConfig(ConfigProperty *rootBlock);
     void ParseHttpBlock(ConfigProperty *httpBlock);
     void ParseTypesBlock(ConfigProperty *typesBlock);
+
+    void ParseMimeType(ConfigProperty *mime);
 };
 
 

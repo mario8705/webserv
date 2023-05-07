@@ -106,71 +106,147 @@ void Webserv::Stop()
     m_running = 0;
 }
 
+class PropertyConsumer
+{
+public:
+    explicit PropertyConsumer(ConfigProperty *property)
+        : m_property(property)
+    {
+        m_blocks = property->getBody();
+    }
+
+    ~PropertyConsumer()
+    {
+        std::vector<ConfigProperty *>::iterator it;
+        ConfigProperty *property;
+
+        for (it = m_blocks.begin(); it != m_blocks.end(); ++it)
+        {
+            property = *it;
+            if (property->IsBlock())
+            {
+                std::cerr << "Unknown block " << property->getParams()[0] << std::endl;
+            }
+            else
+            {
+                std::cerr << "Unknown property " << property->getParams()[0] << std::endl;
+            }
+        }
+    }
+
+    template <typename T, typename Function>
+    void AcceptBlocks(const std::string &blockName, Function cb, T *thisPtr) {
+        std::vector<ConfigProperty *>::iterator it;
+        ConfigProperty *property;
+
+        for (it = m_blocks.begin(); it != m_blocks.end();) {
+            property = *it;
+            if (property->GetName() == blockName) {
+                if (!property->IsBlock()) {
+                    std::cout << "Warning: expected a block but found a property when parsing "
+                              << property->GetName() << std::endl;
+                } else {
+                    (thisPtr->*cb)(property);
+                }
+                it = m_blocks.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    template <typename T, typename Function, typename Validator>
+    void AcceptProperties(const std::string &blockName, Function cb, T *thisPtr, Validator validator)
+    {
+        std::vector<ConfigProperty *>::iterator it;
+        ConfigProperty *property;
+
+        for (it = m_blocks.begin(); it != m_blocks.end(); )
+        {
+            property = *it;
+            if (blockName.empty() || property->GetName() == blockName)
+            {
+                if (property->IsBlock())
+                {
+                    std::cout << "Warning: expected a property but found a block when parsing "
+                        << property->GetName() << std::endl;
+                }
+                else {
+                    if (validator(property)) {
+                        (thisPtr->*cb)(property);
+                    }
+                }
+                it = m_blocks.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+
+private:
+    ConfigProperty *m_property;
+    std::vector<ConfigProperty *> m_blocks;
+};
+
 bool Webserv::LoadConfig(const std::string &path)
 {
     std::vector<Token *> tokens;
-    std::vector<ConfigProperty *> rootBlocks;
+    ConfigProperty *rootProperty;
 
     if (!Token::tokenization(path, tokens))
     {
         return false;
     }
-    ConfigProperty::push_config(tokens, rootBlocks);
-
-    for (ConfigProperty *block : rootBlocks)
-    {
-        if (block->IsBlockSection("http"))
-        {
-            ParseHttpBlock(block);
-        }
-        else
-        {
-            std::cerr << "Unknown block " << block->getParams()[0] << ", ignoring" << std::endl;
-        }
-    }
+    rootProperty = ConfigProperty::push_config(tokens);
+    ParseConfig(rootProperty);
+    delete rootProperty;
     return true;
+}
+
+void Webserv::ParseConfig(ConfigProperty *rootBlock)
+{
+    PropertyConsumer rootConsumer(rootBlock);
+
+    rootConsumer.AcceptBlocks("http", &Webserv::ParseHttpBlock, this);
 }
 
 void Webserv::ParseHttpBlock(ConfigProperty *httpBlock)
 {
-    const std::vector<ConfigProperty *> body = httpBlock->getBody();
-    ConfigProperty *property;
-    size_t i;
+    PropertyConsumer httpConsumer(httpBlock);
 
-    for (i = 0; i < body.size(); ++i)
-    {
-        property = body[i];
-
-        if (property->IsBlockSection("types"))
-        {
-            ParseTypesBlock(property);
-        }
-    }
+    httpConsumer.AcceptBlocks("types", &Webserv::ParseTypesBlock, this);
 }
+
+struct mime_validator
+{
+    bool operator()(ConfigProperty *property) const
+    {
+        if (property->getParams().size() >= 2)
+            return true;
+        std::cerr << "Error: Invalid mime type, (expected <mime> <extensions...>" << std::endl;
+        return false;
+    }
+};
 
 void Webserv::ParseTypesBlock(ConfigProperty *typesBlock)
 {
-    const std::vector<ConfigProperty *> body = typesBlock->getBody();
-    size_t i;
+    PropertyConsumer typesConsumer(typesBlock);
+
+    typesConsumer.AcceptProperties("", &Webserv::ParseMimeType, this, mime_validator());
+}
+
+void Webserv::ParseMimeType(ConfigProperty *mime)
+{
     size_t j;
+    const std::vector<std::string> &params = mime->getParams();
 
-    for (i = 0; i < body.size(); ++i)
+    for (j = 1; j < params.size(); ++j)
     {
-        const std::vector<std::string> &params = body[i]->getParams();
-
-        if (params.size() < 2)
-        {
-            std::cerr << "Invalid mime type" << std::endl;
-        }
+        if (m_mimeTypes.find(params[j]) != m_mimeTypes.end())
+            std::cerr << "Duplicate mime type entry for " << params[j] << std::endl;
         else
-        {
-            for (j = 1; j < params.size(); ++j)
-            {
-                if (m_mimeTypes.find(params[j]) != m_mimeTypes.end())
-                    std::cerr << "Duplicate mime type entry for " << params[j] << std::endl;
-                else
-                    m_mimeTypes.insert(std::make_pair(params[j], params[0]));
-            }
-        }
+            m_mimeTypes.insert(std::make_pair(params[j], params[0]));
     }
 }
