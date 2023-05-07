@@ -16,6 +16,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include "Config/Token.h"
+#include "Config/ConfigProperty.h"
+#include <iostream>
 
 Webserv::Webserv()
 {
@@ -101,4 +104,73 @@ bool Webserv::IsRunning() const {
 void Webserv::Stop()
 {
     m_running = 0;
+}
+
+bool Webserv::LoadConfig(const std::string &path)
+{
+    std::vector<Token *> tokens;
+    std::vector<ConfigProperty *> rootBlocks;
+
+    if (!Token::tokenization(path, tokens))
+    {
+        return false;
+    }
+    ConfigProperty::push_config(tokens, rootBlocks);
+
+    for (ConfigProperty *block : rootBlocks)
+    {
+        if (block->IsBlockSection("http"))
+        {
+            ParseHttpBlock(block);
+        }
+        else
+        {
+            std::cerr << "Unknown block " << block->getParams()[0] << ", ignoring" << std::endl;
+        }
+    }
+    return true;
+}
+
+void Webserv::ParseHttpBlock(ConfigProperty *httpBlock)
+{
+    const std::vector<ConfigProperty *> body = httpBlock->getBody();
+    ConfigProperty *property;
+    size_t i;
+
+    for (i = 0; i < body.size(); ++i)
+    {
+        property = body[i];
+
+        if (property->IsBlockSection("types"))
+        {
+            ParseTypesBlock(property);
+        }
+    }
+}
+
+void Webserv::ParseTypesBlock(ConfigProperty *typesBlock)
+{
+    const std::vector<ConfigProperty *> body = typesBlock->getBody();
+    size_t i;
+    size_t j;
+
+    for (i = 0; i < body.size(); ++i)
+    {
+        const std::vector<std::string> &params = body[i]->getParams();
+
+        if (params.size() < 2)
+        {
+            std::cerr << "Invalid mime type" << std::endl;
+        }
+        else
+        {
+            for (j = 1; j < params.size(); ++j)
+            {
+                if (m_mimeTypes.find(params[j]) != m_mimeTypes.end())
+                    std::cerr << "Duplicate mime type entry for " << params[j] << std::endl;
+                else
+                    m_mimeTypes.insert(std::make_pair(params[j], params[0]));
+            }
+        }
+    }
 }

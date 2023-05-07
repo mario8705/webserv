@@ -16,6 +16,8 @@ public:
     const std::vector<ConfigProperty *> &getBody() const;
     const std::vector<std::string> &getParams() const;
 
+    bool IsBlockSection(const std::string &name) const;
+
     static void push_config(const std::vector<Token *> &tokens, std::vector<ConfigProperty *> &config);
 
 private:

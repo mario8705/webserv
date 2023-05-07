@@ -34,25 +34,40 @@ void ConfigProperty::push_config(const std::vector<Token *> &tokens, std::vector
 
     for (size_t i = 0; i < tokens.size(); i++)
     {
-        if (tokens[i]->getType() != kTokenType_LeftBracket && tokens[i]->getType() != kTokenType_RightBracket)
+        if (tokens[i]->getType() == kTokenType_Ident ||
+            tokens[i]->getType() == kTokenType_String)
+        {
             tmp.push_back(tokens[i]->getToken());
-        if (tokens[i]->getType() == kTokenType_LeftBracket) {
+        }
+        else if (tokens[i]->getType() == kTokenType_LeftBracket)
+        {
             property = new ConfigProperty(tmp);
             if (stck.empty())
                 config.push_back(property);
             else
-                stck.top()->add_body(stck.top());
+                stck.top()->add_body(property);
             stck.push(property);
             tmp.clear();
         }
-        else if (tokens[i]->getType() == kTokenType_LeftBracket)
+        else if (tokens[i]->getType() == kTokenType_RightBracket)
+        {
             stck.pop();
-        if (tokens[i]->getType() == kTokenType_Semicolon) {
-            if (!stck.empty()) {
-                stck.top()->add_body(new ConfigProperty(tmp));
-            } else
-                config.push_back(new ConfigProperty(tmp));
-            tmp.clear();
+        }
+        else if (tokens[i]->getType() == kTokenType_Semicolon)
+        {
+            if (!tmp.empty())
+            {
+                if (stck.empty())
+                    config.push_back(new ConfigProperty(tmp));
+                else
+                    stck.top()->add_body(new ConfigProperty(tmp));
+                tmp.clear();
+            }
         }
     }
+}
+
+bool ConfigProperty::IsBlockSection(const std::string &name) const
+{
+    return (!_params.empty() && name == _params[0]);
 }
