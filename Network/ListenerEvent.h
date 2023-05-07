@@ -6,7 +6,9 @@
 #define WEBSERV_LISTENEREVENT_H
 #include "../IO/IOEvent.h"
 #include <sys/socket.h>
+#include "NetworkAddress4.h"
 
+class IEventLoop;
 class IConnectionHandler;
 
 class ListenerEvent : public IOEvent
@@ -21,11 +23,15 @@ public:
     bool IsWritable() const;
 
     static ListenerEvent *
-    CreateAndBind(IConnectionHandler *handler, struct sockaddr *addr, socklen_t addrlen, int backlog);
+    CreateAndBind(IEventLoop *eventLoop, IConnectionHandler *handler, struct sockaddr *addr, socklen_t addrlen, int backlog);
+
+    static ListenerEvent *
+    CreateAndBind(IEventLoop *eventLoop, IConnectionHandler *handler, const NetworkAddress4 &addr, int backlog);
 
 private:
-    ListenerEvent(IConnectionHandler *handler, int fd);
+    ListenerEvent(IEventLoop *eventLoop, IConnectionHandler *handler, int fd);
 
+    IEventLoop *m_eventLoop;
     IConnectionHandler *m_handler;
 };
 

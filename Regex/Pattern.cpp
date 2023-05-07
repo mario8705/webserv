@@ -6,6 +6,7 @@
 #include <vector>
 #include "RegexException.h"
 #include "Matcher.h"
+#include "Matcher.h"
 
 Pattern::Pattern(std::vector<RegexElement> &elements)
 {
@@ -80,6 +81,21 @@ Pattern *Pattern::Compile(const std::string &regex)
 
     DecodeElements(elements, regex, 0, regex.size());
     return new Pattern(elements);
+}
+
+bool Pattern::Matches(const std::string &pattern, const std::string &input)
+{
+    Pattern *p;
+    Matcher *m;
+    MatchResult res;
+    bool r;
+
+    p = Pattern::Compile(pattern);
+    m = p->CreateMatcher(input);
+    r = m->Match(res);
+    delete m;
+    delete p;
+    return r;
 }
 
 void Pattern::DecodeElements(std::vector<RegexElement> &elements, const std::string &regex,

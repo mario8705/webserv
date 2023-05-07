@@ -5,13 +5,17 @@
 #include "VirtualHost.h"
 #include "ServerHost.h"
 
-VirtualHost::VirtualHost(ServerHost *serverHost)
-    : m_host(serverHost)
+VirtualHost::VirtualHost()
 {
 }
 
 VirtualHost::~VirtualHost()
 {
+}
+
+void VirtualHost::AddListenAddress(const NetworkAddress4 &addr)
+{
+    m_bindAddresses.push_back(addr);
 }
 
 #include "Http/Request.h"

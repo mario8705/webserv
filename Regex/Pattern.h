@@ -20,6 +20,8 @@ public:
 
     static Pattern *Compile(const std::string &regex);
 
+    static bool Matches(const std::string &pattern, const std::string &input);
+
 private:
     explicit Pattern(std::vector<RegexElement> &elements);
 

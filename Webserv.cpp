@@ -19,11 +19,13 @@
 #include "Config/Token.h"
 #include "Config/ConfigProperty.h"
 #include <iostream>
+#include "MimeDatabase.h"
 
 Webserv::Webserv()
 {
     m_eventLoop = new SelectEventLoop;
     m_running = 0;
+    m_mimeDatabase = new MimeDatabase("text/plain");
 }
 
 Webserv::~Webserv()
@@ -38,47 +40,40 @@ Webserv::~Webserv()
     /* TODO free all ServerHost */
 
     delete m_eventLoop;
+    delete m_mimeDatabase;
 
     BufferChain::ReleasePool();
 }
 
-bool Webserv::CreateServer(NetworkAddress4 addr)
+bool Webserv::Bind()
 {
-    struct sockaddr_in sin;
-    uint16_t port;
-    ListenerEvent *listener;
-    ServerHost *host;
+    tVirtualHostList::const_iterator it;
+    std::vector<NetworkAddress4>::const_iterator addrIt;
+    VirtualHost *virtualHost;
+    ServerHost *serverHost;
 
-    port = addr.GetPort();
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = addr.GetAddress();
-    sin.sin_port = htons(port);
+    for (it = m_virtualHosts.cbegin(); it != m_virtualHosts.cend(); ++it)
+    {
+        virtualHost = *it;
+        const std::vector<NetworkAddress4> &bindAddresses = virtualHost->GetBindAddresses();
 
-    host = new ServerHost(m_eventLoop);
+        for (addrIt = bindAddresses.cbegin(); addrIt != bindAddresses.cend(); ++addrIt)
+        {
+            serverHost = GetServerHostByAddr(*addrIt);
+            if (!serverHost)
+            {
+                serverHost = new ServerHost(m_eventLoop, *addrIt);
+                m_hosts.push_back(serverHost);
 
-    /* TODO read configuration file to extract a list of virtual hosts */
-
-    VirtualHost *vhost1 = new VirtualHost(host);
-    vhost1->m_serverNames.push_back("localhost");
-
-    VirtualHost *vhost2 = new VirtualHost(host);
-    vhost2->m_serverNames.push_back("127.0.0.1");
-
-    host->AddVirtualHost(vhost1);
-    host->AddVirtualHost(vhost2);
-
-    m_virtualHosts.push_back(vhost1);
-    m_virtualHosts.push_back(vhost2);
-
-    m_hosts.push_back(host);
-    listener = ListenerEvent::CreateAndBind(host,
-                                            (struct sockaddr *) &sin,
-                                            sizeof(sin),
-                                            10);
-    m_eventLoop->RegisterEvent(listener);
-    m_listeners.push_back(listener);
-
-    return false;
+                if (!serverHost->Bind()) {
+                    std::cout << "Could not bind" << std::endl; /* TODO more explicit message */
+                    return false;
+                }
+            }
+            serverHost->AddVirtualHost(virtualHost);
+        }
+    }
+    return true;
 }
 
 void Webserv::Run() {
@@ -95,6 +90,23 @@ void Webserv::Run() {
             break ;
     }
     /* TODO printf("Shutting down...\n"); */
+}
+
+ServerHost *Webserv::GetServerHostByAddr(const NetworkAddress4 &addr) const
+{
+    tHostList::const_iterator it;
+    ServerHost *serverHost;
+
+    for (it = m_hosts.cbegin(); it != m_hosts.cend(); ++it)
+    {
+        serverHost = *it;
+
+        if (addr == serverHost->GetBindAddress())
+        {
+            return serverHost;
+        }
+    }
+    return NULL;
 }
 
 bool Webserv::IsRunning() const {
@@ -238,9 +250,60 @@ void Webserv::ParseTypesBlock(ConfigProperty *typesBlock)
     typesConsumer.AcceptProperties("", &Webserv::ParseMimeType, this, mime_validator());
 }
 
+#include "Regex/Pattern.h"
+
+struct listen_validator
+{
+    bool operator()(ConfigProperty *prop) const
+    {
+        const std::string &addr = prop->getParams()[1];
+
+        if (Pattern::Matches("^[0-9]+$", addr) ||
+            Pattern::Matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$", addr) ||
+            Pattern::Matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+:[0-9]+$", addr))
+        {
+            return true;
+        }
+        std::cerr << "Invalid format for listen, expecting [ip][:port]" << std::endl;
+        return false;
+    }
+};
+
+class ServerBlockConsumer : public PropertyConsumer
+{
+public:
+    explicit ServerBlockConsumer(ConfigProperty *serverBlock, VirtualHost *virtualHost)
+        : PropertyConsumer(serverBlock), m_virtualHost(virtualHost)
+    {
+    }
+
+    void ConsumeAll()
+    {
+        AcceptProperties("listen", &ServerBlockConsumer::ParseListenProperty,
+                         this, listen_validator());
+    }
+
+private:
+    void ParseListenProperty(ConfigProperty *configProperty)
+    {
+        /* TODO parse network address */
+        m_virtualHost->AddListenAddress(NetworkAddress4(0, 8080));
+    }
+
+    VirtualHost *m_virtualHost;
+};
+
 void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
 {
+    VirtualHost *virtualHost = new VirtualHost;
+    ServerBlockConsumer serverBlockConsumer(serverBlock, virtualHost);
 
+    serverBlockConsumer.ConsumeAll();
+    m_virtualHosts.push_back(virtualHost);
+}
+
+void Webserv::ParseListenProperty(ConfigProperty *listenProp)
+{
 }
 
 void Webserv::ParseMimeType(ConfigProperty *mime)
@@ -250,9 +313,7 @@ void Webserv::ParseMimeType(ConfigProperty *mime)
 
     for (j = 1; j < params.size(); ++j)
     {
-        if (m_mimeTypes.find(params[j]) != m_mimeTypes.end())
+        if (!m_mimeDatabase->RegisterType(params[j], params[0]))
             std::cerr << "Duplicate mime type entry for " << params[j] << std::endl;
-        else
-            m_mimeTypes.insert(std::make_pair(params[j], params[0]));
     }
 }

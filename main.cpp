@@ -29,9 +29,11 @@ int main(int argc, char *argv[])
 
     s_instance = &webserv;
 
+    if (!webserv.Bind())
+        return 1;
+
     signal(SIGPIPE, SIG_IGN);
     signal(SIGTERM, handler_stub);
-    webserv.CreateServer(NetworkAddress4(8080));
     webserv.Run();
     return 0;
 }

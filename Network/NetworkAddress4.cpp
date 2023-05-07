@@ -45,10 +45,33 @@ uint16_t NetworkAddress4::GetPort() const
     return m_port;
 }
 
+static bool ExtractByte(int &b, const char *s, size_t len)
+{
+    size_t i;
+
+    if (len < 1 || len > 3)
+        return false;
+    for (i = 0, b = 0; i < len; ++i)
+    {
+        if (!std::isdigit(s[i]))
+            return false;
+        b = b * 10 + (s[0] - '0');
+    }
+    return (b < 255);
+}
+
 NetworkAddress4 NetworkAddress4::Parse(const std::string &address, uint16_t port) {
     uint32_t addr;
+    size_t sep, sep2;
+    int a[4];
 
-    addr = 0; /* TODO */
+    addr = 0;
+    sep = address.find('.');
+    if (std::string::npos == sep || !ExtractByte(a[0], address.c_str(), sep))
+        throw; /* TODO */
+    sep2 = address.find('.', sep + 1);
+    if (std::string::npos == sep2 || !ExtractByte(a[1], address.c_str() + sep + 1, sep2 - sep - 1))
+        throw;
 
     return NetworkAddress4(addr, port);
 }

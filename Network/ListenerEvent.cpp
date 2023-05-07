@@ -7,14 +7,17 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include "ConnectionHandler.h"
+#include "../IO/EventLoop.h"
 
-ListenerEvent::ListenerEvent(IConnectionHandler *handler, int fd)
-        : IOEvent(fd), m_handler(handler)
+ListenerEvent::ListenerEvent(IEventLoop *eventLoop, IConnectionHandler *handler, int fd)
+        : IOEvent(fd), m_eventLoop(eventLoop), m_handler(handler)
 {
+    m_eventLoop->RegisterEvent(this);
 }
 
 ListenerEvent::~ListenerEvent()
 {
+    m_eventLoop->UnregisterEvent(this);
 }
 
 void ListenerEvent::NotifyRead()
@@ -49,8 +52,8 @@ int fd_set_non_blocking(int fd)
     return 0;
 }
 
-ListenerEvent *ListenerEvent::CreateAndBind(IConnectionHandler *handler, struct sockaddr *addr, socklen_t addrlen,
-                                            int backlog)
+ListenerEvent *ListenerEvent::CreateAndBind(IEventLoop *eventLoop, IConnectionHandler *handler,
+                                            struct sockaddr *addr, socklen_t addrlen, int backlog)
 {
     int fd;
     int en;
@@ -75,11 +78,27 @@ ListenerEvent *ListenerEvent::CreateAndBind(IConnectionHandler *handler, struct 
     {
         goto fail;
     }
-    return new ListenerEvent(handler, fd);
+    return new ListenerEvent(eventLoop, handler, fd);
 
 fail:
     close(fd);
     return NULL;
+}
+
+ListenerEvent *ListenerEvent::CreateAndBind(IEventLoop *eventLoop, IConnectionHandler *handler,
+                                            const NetworkAddress4 &addr, int backlog)
+{
+    struct sockaddr_in sin;
+    uint32_t inaddr;
+    uint16_t port;
+
+    inaddr = addr.GetAddress();
+    port = addr.GetPort();
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = htonl(inaddr);
+    sin.sin_port = htons(port);
+
+    return CreateAndBind(eventLoop, handler, (struct sockaddr *)&sin, sizeof(sin), backlog);
 }
 
 bool ListenerEvent::IsReadable() const

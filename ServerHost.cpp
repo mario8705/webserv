@@ -12,16 +12,27 @@
 #include "Http/HttpClientHandler.h"
 #include "VirtualHost.h"
 #include "string_utils.hpp"
+#include "Network/ListenerEvent.h"
 
 int fd_set_non_blocking(int fd);
 
-ServerHost::ServerHost(IEventLoop *eventLoop)
-    : m_eventLoop(eventLoop)
+ServerHost::ServerHost(IEventLoop *eventLoop, NetworkAddress4 bindAddress)
+    : m_eventLoop(eventLoop), m_bindAddress(bindAddress)
 {
+    m_listenerEvent = NULL;
 }
 
 ServerHost::~ServerHost()
 {
+    delete m_listenerEvent;
+}
+
+bool ServerHost::Bind()
+{
+    if (m_listenerEvent)
+        delete m_listenerEvent;
+    m_listenerEvent = ListenerEvent::CreateAndBind(m_eventLoop, this, m_bindAddress, 10);
+    return (m_listenerEvent != NULL);
 }
 
 void ServerHost::HandleConnection(int fd, struct sockaddr *addr, socklen_t addrlen)
