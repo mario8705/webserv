@@ -7,11 +7,12 @@
 #include "../Response.h"
 
 class HttpProtocolCodec;
+class HttpClientHandler;
 
 class HttpResponse : public Response
 {
 public:
-    HttpResponse(HttpProtocolCodec *codec);
+    explicit HttpResponse(HttpClientHandler *clientHandler);
     ~HttpResponse();
 
     int Write(const void *data, size_t n);

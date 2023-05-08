@@ -182,8 +182,8 @@ void HttpProtocolCodec::WriteHeaders(const tHeaderMap &headers)
 
 void HttpProtocolCodec::DispatchRequest()
 {
-    HttpRequest request(this, m_method, m_rawPath, m_httpVersion, m_headers);
-    HttpResponse response(this);
+    HttpRequest request(m_handler, m_method, m_rawPath, m_httpVersion, m_headers);
+    HttpResponse response(m_handler);
     tHeaderMap headers;
     IAsyncRequestHandler *asyncHandler;
 

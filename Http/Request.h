@@ -10,6 +10,7 @@
 #include "HttpVersion.h"
 
 class HttpProtocolCodec;
+class HttpClientHandler;
 
 class Request
 {
@@ -28,6 +29,7 @@ public:
 protected:
     explicit Request(tHttpHeaders &headers);
 
+    HttpClientHandler *m_clientHandler;
     HttpMethod m_method;
     std::string m_rawPath;
     tHttpHeaders &m_headers;

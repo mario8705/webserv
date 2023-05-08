@@ -6,10 +6,12 @@
 #define WEBSERV_HTTPREQUEST_H
 #include "../Request.h"
 
+class HttpClientHandler;
+
 class HttpRequest : public Request
 {
 public:
-    HttpRequest(HttpProtocolCodec *codec, HttpMethod method, const std::string &rawPath, HttpVersion version, tHttpHeaders &headers);
+    HttpRequest(HttpClientHandler *clientHandler, HttpMethod method, const std::string &rawPath, HttpVersion version, tHttpHeaders &headers);
     ~HttpRequest();
 };
 

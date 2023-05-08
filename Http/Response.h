@@ -11,12 +11,14 @@ class DataBuffer;
 class HttpStatusCode;
 class IAsyncRequestHandler;
 class HttpProtocolCodec;
+class HttpClientHandler;
 
 enum HttpTransferEncoding
 {
     kTransferEncoding_Chunked,
     kTransferEncoding_Stream,
 };
+
 
 class Response
 {
@@ -40,6 +42,8 @@ public:
     void SetAsyncHandler(IAsyncRequestHandler *asyncHandler);
     IAsyncRequestHandler *GetAsyncHandler() const;
 
+    void SendFile(const std::string &path);
+
     HttpProtocolCodec *GetHttpCodec() const;
 
     void SetContentLength(size_t length);
@@ -54,6 +58,7 @@ public:
 protected:
     Response();
 
+    HttpClientHandler *m_clientHandler;
     HttpProtocolCodec *m_codec;
     int m_status;
     std::string m_message;

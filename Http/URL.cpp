@@ -3,19 +3,59 @@
 //
 
 #include "URL.h"
+#include <iostream>
 
-URL::URL() {
-
+URL::URL(std::string path)
+    : m_path(path)
+{
 }
 
-URL::~URL() {
-
+URL::~URL()
+{
 }
 
-URL URL::ParseURL(const std::string &url) {
-    //printf("Parsing: %s\n", url.c_str());
+std::string URL::GetAbsolutePath(const std::string &root) const
+{
+    std::string absolutePath(root);
+    size_t cur, sep;
+    std::string component;
 
-    return URL();
+    cur = 0;
+    do {
+        sep = m_path.find('/', cur);
+
+        if (std::string::npos != sep)
+            component = m_path.substr(cur, sep - cur);
+        else
+            component = m_path.substr(cur);
+
+        if (".." == component)
+            return ""; /* TODO throw exception ?, return a boolean ? */
+
+        if (absolutePath.empty() || absolutePath[absolutePath.size() - 1] != '/')
+            absolutePath.insert(absolutePath.end(), '/');
+        absolutePath.insert(absolutePath.end(), component.begin(), component.end());
+
+        cur = sep + 1;
+    } while (std::string::npos != sep);
+
+    return absolutePath;
+}
+
+URL URL::ParseURL(const std::string &url)
+{
+    size_t querySep;
+    std::string path;
+
+    if (std::string::npos != (querySep = url.find_first_of('?')))
+    {
+        path = url.substr(0, querySep);
+    }
+    else
+    {
+        path = url;
+    }
+    return URL(path);
 }
 
 static int hexval(int ch)
