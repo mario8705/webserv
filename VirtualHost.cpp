@@ -25,11 +25,28 @@ void VirtualHost::AddListenAddress(const NetworkAddress4 &addr)
 #include <sstream>
 #include "Http/FileRequestHandler.h"
 #include "Http/URL.h"
+#include "MountPoint.h"
 
 void VirtualHost::HandleRequest(Request *request, Response *response)
 {
     URL url(request->GetRawPath());
+    MountPoint *mountPoint;
+    size_t i;
 
+    for (i = 0; i < m_mountPoints.size(); ++i)
+    {
+        mountPoint = m_mountPoints[i];
+
+        if (mountPoint->Matches(request->GetRawPath()))
+        {
+            printf("Found a match : %p\n", mountPoint);
+            break ;
+        }
+    }
+    if (m_mountPoints.size() == i)
+    {
+        printf("404 or default route for %s\n", request->GetRawPath().c_str());
+    }
     response->SendFile(url.GetAbsolutePath("./htdocs"));
 }
 

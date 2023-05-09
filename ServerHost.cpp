@@ -32,6 +32,8 @@ bool ServerHost::Bind()
     if (m_listenerEvent)
         delete m_listenerEvent;
     m_listenerEvent = ListenerEvent::CreateAndBind(m_eventLoop, this, m_bindAddress, 10);
+    if (m_listenerEvent)
+        printf("Listening on :%d\n", m_bindAddress.GetPort());
     return (m_listenerEvent != NULL);
 }
 

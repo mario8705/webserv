@@ -8,6 +8,7 @@
 #include "ServerHost.h"
 #include "VirtualHost.h"
 #include "IO/BufferChain.h"
+#include "MountPoint.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -118,89 +119,6 @@ void Webserv::Stop()
     m_running = 0;
 }
 
-class PropertyConsumer
-{
-public:
-    explicit PropertyConsumer(ConfigProperty *property)
-        : m_property(property)
-    {
-        m_blocks = property->getBody();
-    }
-
-    ~PropertyConsumer()
-    {
-        std::vector<ConfigProperty *>::iterator it;
-        ConfigProperty *property;
-
-        for (it = m_blocks.begin(); it != m_blocks.end(); ++it)
-        {
-            property = *it;
-            if (property->IsBlock())
-            {
-                std::cerr << "Unknown block " << property->getParams()[0] << std::endl;
-            }
-            else
-            {
-                std::cerr << "Unknown property " << property->getParams()[0] << std::endl;
-            }
-        }
-    }
-
-    template <typename T, typename Function>
-    void AcceptBlocks(const std::string &blockName, Function cb, T *thisPtr) {
-        std::vector<ConfigProperty *>::iterator it;
-        ConfigProperty *property;
-
-        for (it = m_blocks.begin(); it != m_blocks.end();) {
-            property = *it;
-            if (property->GetName() == blockName) {
-                if (!property->IsBlock()) {
-                    std::cout << "Warning: expected a block but found a property when parsing "
-                              << property->GetName() << std::endl;
-                } else {
-                    (thisPtr->*cb)(property);
-                }
-                it = m_blocks.erase(it);
-            } else {
-                ++it;
-            }
-        }
-    }
-
-    template <typename T, typename Function, typename Validator>
-    void AcceptProperties(const std::string &blockName, Function cb, T *thisPtr, Validator validator)
-    {
-        std::vector<ConfigProperty *>::iterator it;
-        ConfigProperty *property;
-
-        for (it = m_blocks.begin(); it != m_blocks.end(); )
-        {
-            property = *it;
-            if (blockName.empty() || property->GetName() == blockName)
-            {
-                if (property->IsBlock())
-                {
-                    std::cout << "Warning: expected a property but found a block when parsing "
-                        << property->GetName() << std::endl;
-                }
-                else {
-                    if (validator(property)) {
-                        (thisPtr->*cb)(property);
-                    }
-                }
-                it = m_blocks.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
-    }
-
-private:
-    ConfigProperty *m_property;
-    std::vector<ConfigProperty *> m_blocks;
-};
 
 bool Webserv::LoadConfig(const std::string &path)
 {
@@ -216,6 +134,8 @@ bool Webserv::LoadConfig(const std::string &path)
     delete rootProperty;
     return true;
 }
+
+#include "Config/PropertyConsumer.h"
 
 void Webserv::ParseConfig(ConfigProperty *rootBlock)
 {
@@ -269,10 +189,75 @@ struct listen_validator
     }
 };
 
+struct root_validator
+{
+    bool operator()(ConfigProperty *) const
+    {
+        return true;
+    }
+};
+
+class ServerLocationBlockConsumer : public PropertyConsumer
+{
+public:
+    ServerLocationBlockConsumer(ConfigProperty *locationBlock, VirtualHost *virtualHost)
+        : PropertyConsumer(locationBlock), m_virtualHost(virtualHost)
+    {
+        m_mountPoint = NULL;
+    }
+
+    void ConsumeAll()
+    {
+        const std::vector<std::string> &params = m_property->getParams();
+        RouteMatch routeMatch;
+        int pathIndex;
+
+        if (params.size() < 2)
+        {
+            std::cerr << "Not enough parameters in location block" << std::endl;
+            return ;
+        }
+        else if (params.size() > 4)
+        {
+            std::cerr << "Too many parameters in location block" << std::endl;
+            return ;
+        }
+
+        routeMatch = kRouteMatch_StartsWith;
+        pathIndex = 1;
+        if (params.size() == 3)
+        {
+            if ("~" == params[1])
+                routeMatch = kRouteMatch_Regex;
+            else if ("=" == params[1])
+                routeMatch = kRouteMatch_Exact;
+            else
+            {
+                std::cerr << "Unknown modifier for location block : " << params[1] << std::endl;
+            }
+            ++pathIndex;
+        }
+        m_mountPoint = new MountPoint(routeMatch, params[pathIndex]);
+
+        AcceptProperties("root", &ServerLocationBlockConsumer::ParseRootProperty, this, root_validator());
+
+        m_virtualHost->Mount(m_mountPoint);
+    }
+
+private:
+    VirtualHost *m_virtualHost;
+    MountPoint *m_mountPoint;
+
+    void ParseRootProperty(ConfigProperty *rootProp)
+    {
+        m_mountPoint->SetRoot(rootProp->getParams()[1]);
+    }
+};
+
 class ServerBlockConsumer : public PropertyConsumer
 {
 public:
-    explicit ServerBlockConsumer(ConfigProperty *serverBlock, VirtualHost *virtualHost)
+    ServerBlockConsumer(ConfigProperty *serverBlock, VirtualHost *virtualHost)
         : PropertyConsumer(serverBlock), m_virtualHost(virtualHost)
     {
     }
@@ -281,6 +266,8 @@ public:
     {
         AcceptProperties("listen", &ServerBlockConsumer::ParseListenProperty,
                          this, listen_validator());
+        AcceptBlocks("location", &ServerBlockConsumer::ParseLocationBlock,
+                     this);
     }
 
 private:
@@ -288,6 +275,13 @@ private:
     {
         /* TODO parse network address */
         m_virtualHost->AddListenAddress(NetworkAddress4(0, 8080));
+    }
+
+    void ParseLocationBlock(ConfigProperty *locationBlock)
+    {
+        ServerLocationBlockConsumer locationConsumer(locationBlock, m_virtualHost);
+
+        locationConsumer.ConsumeAll();
     }
 
     VirtualHost *m_virtualHost;
