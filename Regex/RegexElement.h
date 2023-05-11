@@ -57,27 +57,6 @@ struct RegexElement
         this->max = max;
     }
 
-    /*
-    bool Match(const std::string &input, size_t &pos) const
-    {
-        switch (type)
-        {
-        case kRegexElementType_AssertStart:
-            return (pos == 0);
-
-        case kRegexElementType_AssertEnd:
-            printf("%zu %zu\n", (pos + 1), input.size());
-            return ((pos + 1) >= input.size());
-
-        case kRegexElementType_Range:
-            return MatchRange(input[pos++]);
-
-        default:
-            break;
-        }
-        return false;
-    }*/
-
     bool MatchRange(int ch) const
     {
         size_t i;
