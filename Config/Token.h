@@ -7,7 +7,7 @@
 
 class Token {
 public:
-    Token(std::string token, TokenType tokentype);
+    Token(const std::string &token, TokenType tokenType, int line, int column);
     ~Token();
 
     TokenType getType() const;
@@ -17,7 +17,9 @@ public:
 
 private:
     TokenType _tokenType;
-    std::string _Token;
+    std::string _token;
+    int m_line;
+    int m_column;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Token &token)

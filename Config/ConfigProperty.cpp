@@ -3,11 +3,12 @@
 #include "Token.h"
 
 ConfigProperty::ConfigProperty()
+    : m_isBlock(true)
 {
 }
 
-ConfigProperty::ConfigProperty(const std::vector<std::string> &tokens)
-    : _params(tokens)
+ConfigProperty::ConfigProperty(const std::vector<std::string> &params, bool isBlock)
+    : _params(params), m_isBlock(isBlock)
 {
 }
 
@@ -52,7 +53,7 @@ ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
         }
         else if (tokens[i]->getType() == kTokenType_LeftBracket)
         {
-            property = new ConfigProperty(tmp);
+            property = new ConfigProperty(tmp, true);
             stck.top()->add_body(property);
             stck.push(property);
             tmp.clear();
@@ -69,7 +70,7 @@ ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
         {
             if (!tmp.empty())
             {
-                stck.top()->add_body(new ConfigProperty(tmp));
+                stck.top()->add_body(new ConfigProperty(tmp, false));
                 tmp.clear();
             }
         }
@@ -84,6 +85,52 @@ const std::string &ConfigProperty::GetName() const
 
 bool ConfigProperty::IsBlock() const
 {
-    /* TODO http {} is considered a property and not a block, change this ? */
-    return !_body.empty();
+    return m_isBlock;
+}
+
+void ConfigProperty::Dump(std::ostream &out, int indent)
+{
+    Dump(out, this, 0, indent);
+    out.flush();
+}
+
+static inline void spaces(std::ostream &out, int n)
+{
+    while (n--)
+        out.put(' ');
+}
+
+void ConfigProperty::Dump(std::ostream &out, ConfigProperty *prop, int depth, int indent)
+{
+    size_t i;
+
+    if (depth >= 16)
+        return ;
+    spaces(out, depth * indent);
+    for (i = 0; i < prop->_params.size(); ++i) {
+        if (i > 0)
+            out << " ";
+        out << prop->_params[i];
+    }
+    if (prop->IsBlock())
+    {
+        if (indent > 0)
+            out << " {\n";
+        else
+            out << "{";
+        for (i = 0; i < prop->_body.size(); ++i)
+        {
+            Dump(out, prop->_body[i], depth + 1, indent);
+        }
+        spaces(out, depth * indent);
+        out << "}";
+        if (indent > 0)
+            out << "\n";
+    }
+    else
+    {
+        out << ";";
+        if (indent > 0)
+            out << "\n";
+    }
 }
