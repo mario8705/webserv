@@ -33,7 +33,7 @@ BufferChain *BufferChain::Allocate(size_t capacity) {
     BufferChain *chain;
     char *buffer;
 
-    if (!m_pool.empty())
+    if (!m_pool.empty() && 0)
     {
         chain = m_pool.back();
         m_pool.pop_back();
