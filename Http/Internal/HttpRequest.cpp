@@ -3,12 +3,14 @@
 //
 
 #include "HttpRequest.h"
+#include "../HttpClientHandler.h"
 
-HttpRequest::HttpRequest(HttpProtocolCodec *codec, HttpMethod method, const std::string &rawPath, HttpVersion version,
+HttpRequest::HttpRequest(HttpClientHandler *clientHandler, HttpMethod method, const std::string &rawPath, HttpVersion version,
                          Request::tHttpHeaders &headers)
                          : Request(headers)
 {
-    m_codec = codec;
+    m_clientHandler = clientHandler;
+    m_codec = clientHandler->GetProtocolCodec();
     m_method = method;
     m_rawPath = rawPath;
     /* m_httpVersion = version; */ /* TODO */

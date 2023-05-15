@@ -61,3 +61,13 @@ BufferEvent *HttpClientHandler::GetBufferEvent() const
     return m_event;
 }
 
+HttpProtocolCodec *HttpClientHandler::GetProtocolCodec() const
+{
+    return m_protocolCodec;
+}
+
+IEventLoop *HttpClientHandler::GetEventLoop() const
+{
+    return m_host->GetEventLoop();
+}
+

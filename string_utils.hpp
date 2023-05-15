@@ -7,6 +7,45 @@
 #include <string>
 #include <sstream>
 
+
+namespace ft
+{
+    template< class InputIt1, class InputIt2, class Compare >
+    bool lexicographical_compare( InputIt1 first1, InputIt1 last1,
+                                  InputIt2 first2, InputIt2 last2, Compare comp )
+    {
+        for (; (first1 != last1) && (first2 != last2); ++first1, (void) ++first2)
+        {
+            if (comp(*first1, *first2))
+                return true;
+            if (comp(*first2, *first1))
+                return false;
+        }
+        return (first1 == last1) && (first2 != last2);
+    }
+}
+
+struct case_insensitive_less
+{
+    struct case_insensitive_compare
+    {
+        bool operator()(const unsigned char &c1, const unsigned char &c2) const
+        {
+            return std::tolower(c1) < std::tolower(c2);
+        }
+    };
+
+    bool operator()(const std::string &lhs, const std::string &rhs) const
+    {
+        return ft::lexicographical_compare(
+                lhs.begin(), lhs.end(),
+                rhs.begin(), rhs.end(),
+                case_insensitive_compare()
+        );
+    }
+};
+
+
 namespace utils
 {
     template <typename T>

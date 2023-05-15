@@ -12,16 +12,19 @@ class Matcher;
 
 class Pattern
 {
+    friend class Matcher;
+
 public:
+    Pattern();
     ~Pattern();
 
     bool Match(const std::string &input);
-    Matcher *CreateMatcher(const std::string &input);
 
-    static Pattern *Compile(const std::string &regex);
+    void Compile(const std::string &regex);
+
+    static bool Matches(const std::string &pattern, const std::string &input);
 
 private:
-    explicit Pattern(std::vector<RegexElement> &elements);
 
     static void DecodeElements(std::vector<RegexElement> &elements, const std::string &regex,
                                size_t head, size_t tail);

@@ -5,6 +5,11 @@
 #include "Response.h"
 #include "../IO/DataBuffer.h"
 #include "HttpStatusCode.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include "HttpProtocolCodec.h"
+#include "HttpClientHandler.h"
+#include "FileRequestHandler.h"
 
 Response::Response()
 {
@@ -64,6 +69,25 @@ void Response::SetAsyncHandler(IAsyncRequestHandler *asyncHandler)
 IAsyncRequestHandler *Response::GetAsyncHandler() const
 {
     return m_asyncHandler;
+}
+
+void Response::SendFile(const std::string &path)
+{
+    FileRequestHandler *handler;
+    int fd;
+
+    fd = open(path.c_str(), O_RDONLY);
+    if (fd < 0)
+    {
+        printf("404\n");
+        return ;
+    }
+    if (NULL == (handler = FileRequestHandler::Create(m_clientHandler->GetEventLoop(), this, fd)))
+    {
+        close(fd);
+        return ; /* TODO ???? Which error code should we use ? 500 ? */
+    }
+    SetAsyncHandler(handler);
 }
 
 HttpProtocolCodec *Response::GetHttpCodec() const

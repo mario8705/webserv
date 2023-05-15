@@ -7,18 +7,8 @@
 #include "RegexException.h"
 #include "Matcher.h"
 
-Pattern::Pattern(std::vector<RegexElement> &elements)
+Pattern::Pattern()
 {
-    m_elements.swap(elements);
-
-    /*
-    for (auto &&e : m_elements)
-    {
-        if (e.ranges.size() > 0)
-        printf("[%c-%c]{%d,%d}\n", e.ranges[0].start, e.ranges[0].end, e.min, e.max);
-        else
-            printf("No range\n");
-    }*/
 }
 
 Pattern::~Pattern()
@@ -27,59 +17,32 @@ Pattern::~Pattern()
 
 bool Pattern::Match(const std::string &input)
 {
-    size_t i, j, cur;
-    int occ;
+    MatchResult result;
 
-    for (i = 0; i < input.size(); ++i)
-    {
-        cur = i;
-        for (j = 0; j < m_elements.size(); ++j)
-        {
-            for (occ = 0; occ < m_elements[j].max; ++occ)
-            {
-                if (kRegexElementType_AssertStart == m_elements[j].type)
-                {
-                    if (cur != 0)
-                        break ;
-                }
-                else if (kRegexElementType_AssertEnd == m_elements[j].type)
-                {
-                    if (cur != input.size())
-                        break ;
-                }
-                else if (kRegexElementType_Range == m_elements[j].type && cur < input.size()) {
-                    if (!m_elements[j].MatchRange(input[cur]))
-                        break ;
-                    ++cur;
-                }
-                else
-                {
-                    break ;
-                }
-            }
-            if (occ < m_elements[j].min) {
-                break;
-            }
-        }
-        if (j == m_elements.size())
-            return true;
-    }
-    return false;
+    Matcher m(this, input);
+    return m.Match(result);
 }
 
-Matcher *Pattern::CreateMatcher(const std::string &input)
-{
-    return new Matcher(m_elements, input);
-}
-
-Pattern *Pattern::Compile(const std::string &regex)
+void Pattern::Compile(const std::string &regex)
 {
     size_t i;
     size_t pos;
-    std::vector<RegexElement> elements;
 
-    DecodeElements(elements, regex, 0, regex.size());
-    return new Pattern(elements);
+    m_elements.clear();
+    m_elements.reserve(16);
+    DecodeElements(m_elements, regex, 0, regex.size());
+}
+
+bool Pattern::Matches(const std::string &pattern, const std::string &input)
+{
+    Pattern p;
+    MatchResult res;
+    bool r;
+
+    p.Compile(pattern);
+    Matcher m(&p, input);
+    r = m.Match(res);
+    return r;
 }
 
 void Pattern::DecodeElements(std::vector<RegexElement> &elements, const std::string &regex,
@@ -194,7 +157,7 @@ void Pattern::DecodeRangeList(RegexElement &element,
         else if ((head + 1) < tail && regex[head + 1] == '-')
         {
             start = regex[head++];
-            if ((head + 1) != tail)
+            if ((head + 1) < tail)
                 end = regex[++head];
             else
                 end = 255;

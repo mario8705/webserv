@@ -18,7 +18,8 @@ FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response
     m_event->Enable(kEvent_Read);
     m_event->GetInputBuffer()->SetReadHighWatermark(65536);
 
-    response->AddHeader("Content-Type", "application/octet-stream");
+    /* TODO let the request handler select the appropriate mime type */
+    response->AddHeader("Content-Type", "text/html");
     response->SetContentLength(length);
     response->SetChunked(false);
 }

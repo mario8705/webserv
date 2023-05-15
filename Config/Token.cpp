@@ -1,8 +1,8 @@
 #include "Token.h"
 #include <fstream>
 
-Token::Token(std::string token, TokenType tokentype)
-    : _Token(token), _tokenType(tokentype)
+Token::Token(const std::string &token, TokenType tokentype, int line, int column)
+    : _token(token), _tokenType(tokentype), m_line(line), m_column(column)
 {
 }
 
@@ -17,77 +17,86 @@ TokenType Token::getType() const
 
 std::string Token::getToken() const
 {
-    return _Token;
+    return _token;
 }
 
-void Token::tokenization(const std::string &filename, std::vector<Token *> &tokens)
+bool Token::tokenization(const std::string &filename, std::vector<Token *> &tokens)
 {
     std::ifstream file(filename);
-    std::string stringline;
     std::string line;
     char ch;
+    int nline;
+    int col;
 
+    if (!file.is_open())
+        return false;
+    nline = 0;
+    col = 0;
     while (file.get(ch))
     {
+        ++col;
+        /* Consume all white spaces */
         if (std::isspace(ch))
         {
-            if (!line.empty())
-                tokens.push_back(new Token(line, kTokenType_Ident));
-            line.clear();
-            while (std::isspace(ch) && !file.eof())
-                file.get(ch);
+            if ('\n' == ch)
+                ++nline, col = 0;
         }
-        if (ch == ';')
+        else if (ch == ';')
         {
-            if (!line.empty())
-                tokens.push_back(new Token(line, kTokenType_Ident));
-            line.clear();
-            tokens.push_back(new Token(";", kTokenType_Semicolon));
-            file.get(ch);
-            while (std::isspace(ch) && !file.eof())
+            tokens.push_back(new Token(";", kTokenType_Semicolon, nline, 0));
+        }
+        else if (ch == '#')
+        {
+            while (file.get(ch))
             {
-                file.get(ch);
+                if ('\n' == ch)
+                    break ;
             }
+            file.unget();
         }
-        if (ch == '#')
+        else if (ch == '{')
         {
-            while (ch != '\n' && !file.eof())
-                file.get(ch);
-            while (std::isspace(ch) && !file.eof())
-                file.get(ch);
+            tokens.push_back(new Token("{", kTokenType_LeftBracket, nline, 0));
         }
-        if (ch == '{')
+        else if (ch == '}')
         {
-            if (!line.empty())
-                tokens.push_back(new Token(line, kTokenType_Ident));
-            tokens.push_back(new Token("{", kTokenType_LeftBracket));
+            tokens.push_back(new Token("}", kTokenType_RightBracket, nline, 0));
+        }
+        else if (ch == '\'')
+        {
             line.clear();
-            while (std::isspace(ch) && !file.eof())
-                file.get(ch);
-        }
-        if (ch == '}')
-        {
-            tokens.push_back(new Token("}", kTokenType_RightBracket));
-            line.clear();
-            while (std::isspace(ch) && !file.eof())
-                file.get(ch);
-        }
-        if (ch == '\'')
-        {
-            stringline += ch;
-            file.get(ch);
-            while (ch != '\'' && !file.eof())
+            line.insert(line.end(), ch);
+            while (file.get(ch))
             {
-                stringline += ch;
-                file.get(ch);
+                ++col;
+                if ('\'' == ch)
+                    break ;
+                if ('\n' == ch)
+                {
+                    /* TODO throw error */
+                }
+                line.insert(line.end(), ch);
             }
-            stringline += ch;
-            tokens.push_back(new Token(stringline, kTokenType_String));
-            stringline.clear();
-            while (std::isspace(ch) && !file.eof())
-                file.get(ch);
+            if (file.eof())
+            {
+                /* TODO throw error */
+            }
+            tokens.push_back(new Token(line, kTokenType_String, nline, 0));
         }
-        if (ch != ';' && ch != '\n' && ch != '#' && ch!= '\'' && ch != '{' && ch != '}' && !file.eof())
-            line += ch;
+        else
+        {
+            line.clear();
+            /* TODO increment col here */
+            do {
+                if (';' == ch || std::isspace(ch) || '#' == ch || '{' == ch || '}' == ch)
+                {
+                    file.unget();
+                    break ;
+                }
+                line.insert(line.end(), ch);
+            } while (file.get(ch));
+            tokens.push_back(new Token(line, kTokenType_Ident, nline, 0));
+        }
     }
+    return true;
 }

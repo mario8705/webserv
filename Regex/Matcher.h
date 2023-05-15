@@ -16,12 +16,12 @@ class Matcher
     friend class Pattern;
 
 public:
+    Matcher(Pattern *pattern, const std::string &input);
     ~Matcher();
 
     bool Match(MatchResult &result);
 
 private:
-    Matcher(std::vector<RegexElement> &elements, const std::string &input);
 
     bool MatchElements(std::vector<RegexElement> &elements, size_t &pos, std::string &result);
 

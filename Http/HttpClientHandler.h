@@ -11,6 +11,7 @@
 class ServerHost;
 class BufferEvent;
 class HttpProtocolCodec;
+class IEventLoop;
 
 class HttpClientHandler : public IBufferEventHandler, public IRequestHandler
 {
@@ -27,6 +28,8 @@ public:
     void Disconnect(bool flush);
 
     BufferEvent *GetBufferEvent() const;
+    HttpProtocolCodec *GetProtocolCodec() const;
+    IEventLoop *GetEventLoop() const;
 
 private:
     ServerHost *m_host;

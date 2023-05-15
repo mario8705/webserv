@@ -5,8 +5,7 @@
 #include "VirtualHost.h"
 #include "ServerHost.h"
 
-VirtualHost::VirtualHost(ServerHost *serverHost)
-    : m_host(serverHost)
+VirtualHost::VirtualHost()
 {
 }
 
@@ -14,38 +13,41 @@ VirtualHost::~VirtualHost()
 {
 }
 
+void VirtualHost::AddListenAddress(const NetworkAddress4 &addr)
+{
+    m_bindAddresses.push_back(addr);
+}
+
 #include "Http/Request.h"
 #include "Http/Response.h"
 #include "IO/DataBuffer.h"
-#include "Http/AsyncRequestHandler.h"
 #include "IO/BufferEvent.h"
 #include <sstream>
 #include "Http/FileRequestHandler.h"
-
-#include <fcntl.h>
-#include <unistd.h>
+#include "Http/URL.h"
+#include "MountPoint.h"
 
 void VirtualHost::HandleRequest(Request *request, Response *response)
 {
-    std::stringstream ss;
-    FileRequestHandler *handler;
+    URL url(request->GetRawPath());
+    MountPoint *mountPoint;
+    size_t i;
 
-    /*
-    int fd;
-
-    fd = open("/Users/alexislavaud/Downloads/The Batman [FR-EN] (2022).mkv", O_RDONLY | O_NONBLOCK);
-    if (fd < 0)
+    for (i = 0; i < m_mountPoints.size(); ++i)
     {
-        perror("meh");
-        exit(0);
-    }
+        mountPoint = m_mountPoints[i];
 
-    if (NULL == (handler = FileRequestHandler::Create(m_host->GetEventLoop(), response, fd)))
+        if (mountPoint->Matches(request->GetRawPath()))
+        {
+            printf("Found a match : %p\n", mountPoint);
+            break ;
+        }
+    }
+    if (m_mountPoints.size() == i)
     {
-        return ;
+        printf("404 or default route for %s\n", request->GetRawPath().c_str());
     }
-
-    response->SetAsyncHandler(handler);*/
+    response->SendFile(url.GetAbsolutePath("./htdocs"));
 }
 
 const VirtualHost::tServerNameList &VirtualHost::GetServerNames() const

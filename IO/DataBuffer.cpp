@@ -13,9 +13,8 @@
 DataBuffer::DataBuffer()
 {
     m_length = 0;
-    /* TODO warning : typeof is a GCC extension, decltype is preferred but is a C++11 feature :/ */
-    m_readHighWatermark = std::numeric_limits<typeof(m_readHighWatermark)>::max();
-    m_writeHighWatermark = std::numeric_limits<typeof(m_readHighWatermark)>::max();
+    m_readHighWatermark = std::numeric_limits<size_t>::max();
+    m_writeHighWatermark = std::numeric_limits<size_t>::max();
 }
 
 DataBuffer::~DataBuffer()
@@ -149,19 +148,22 @@ int DataBuffer::CopyOut(void *data, size_t n)
     BufferChain *chain;
     size_t sz;
     size_t total;
+    size_t remaining;
     char *ptr;
 
     ptr = (char *)data;
     total = 0;
+    remaining = n;
     for (it = m_chains.begin(); it != m_chains.end() && total < n; )
     {
         chain = *it;
         sz = chain->m_offset - chain->m_misalign;
-        if (sz > n)
-            sz = n;
+        if (sz > remaining)
+            sz = remaining;
         memcpy(ptr + total, chain->m_buffer + chain->m_misalign, sz);
         chain->m_misalign += sz;
         total += sz;
+        remaining -= sz;
         m_length -= sz;
         if (chain->m_misalign == chain->m_offset &&
             chain->m_offset == chain->m_size)

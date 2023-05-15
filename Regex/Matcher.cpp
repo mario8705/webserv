@@ -3,18 +3,20 @@
 //
 
 #include "Matcher.h"
+#include "Pattern.h"
 
 /**
  * TODO Groups have been nested too deeply, consider simplifying your pattern
  */
 
-Matcher::Matcher(std::vector<RegexElement> &elements, const std::string &input)
-    : m_elements(elements)
+Matcher::Matcher(Pattern *pattern, const std::string &input)
+    : m_elements(pattern->m_elements)
 {
     m_input = input.c_str();
     m_head = 0;
     m_end = input.size();
 }
+
 
 Matcher::~Matcher()
 {
@@ -25,13 +27,17 @@ bool Matcher::Match(MatchResult &result)
     size_t pos;
     std::string res;
 
-    for (; m_head <= m_end; ++m_head)
+    for (; m_head <= m_end; )
     {
         pos = m_head;
         if (MatchElements(m_elements, pos, res))
         {
             m_head = pos;
             return true;
+        }
+        else
+        {
+            m_head++;
         }
     }
     return false;
@@ -61,7 +67,7 @@ bool Matcher::MatchElements(std::vector<RegexElement> &elements, size_t &pos, st
             {
                 if (pos >= m_end)
                     break ;
-                if (!elements[i].MatchRange(m_input[pos]))
+                if (!elements[i].MatchRange((unsigned char)m_input[pos]))
                     break ;
                 ++pos;
             }

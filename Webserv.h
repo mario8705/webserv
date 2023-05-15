@@ -5,6 +5,7 @@
 #ifndef WEBSERV_WEBSERV_H
 #define WEBSERV_WEBSERV_H
 #include <csignal>
+#include <string>
 #include <vector>
 #include <map>
 #include "Network/NetworkAddress4.h"
@@ -13,6 +14,8 @@ class IEventLoop;
 class ListenerEvent;
 class ServerHost;
 class VirtualHost;
+class ConfigProperty;
+class MimeDatabase;
 
 class Webserv
 {
@@ -23,8 +26,9 @@ public:
     Webserv();
     ~Webserv();
 
-    bool CreateServer(NetworkAddress4 addr);
+    bool LoadConfig(const std::string &path);
 
+    bool Bind();
     void Run();
 
     bool IsRunning() const;
@@ -35,8 +39,20 @@ private:
     std::vector<ListenerEvent *> m_listeners;
     tHostList m_hosts;
     tVirtualHostList m_virtualHosts;
-//    std::map<NetworkAddress4, ServerHost *> m_hosts;
     volatile sig_atomic_t m_running;
+    MimeDatabase *m_mimeDatabase;
+    std::string m_defaultMimeType;
+
+    ServerHost *GetServerHostByAddr(const NetworkAddress4 &addr) const;
+
+    void ParseConfig(ConfigProperty *rootBlock);
+    void ParseHttpBlock(ConfigProperty *httpBlock);
+    void ParseTypesBlock(ConfigProperty *typesBlock);
+
+    void ParseServerBlock(ConfigProperty *serverBlock);
+    void ParseListenProperty(ConfigProperty *listenProp);
+
+    void ParseMimeType(ConfigProperty *mime);
 };
 
 

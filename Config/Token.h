@@ -7,17 +7,19 @@
 
 class Token {
 public:
-    Token(std::string token, TokenType tokentype);
+    Token(const std::string &token, TokenType tokenType, int line, int column);
     ~Token();
 
     TokenType getType() const;
     std::string getToken() const;
 
-    static void tokenization(const std::string &filename, std::vector<Token *> &tokens);
+    static bool tokenization(const std::string &filename, std::vector<Token *> &tokens);
 
 private:
     TokenType _tokenType;
-    std::string _Token;
+    std::string _token;
+    int m_line;
+    int m_column;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Token &token)

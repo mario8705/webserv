@@ -4,10 +4,12 @@
 
 #include "HttpResponse.h"
 #include "../HttpProtocolCodec.h"
+#include "../HttpClientHandler.h"
 
-HttpResponse::HttpResponse(HttpProtocolCodec *codec)
+HttpResponse::HttpResponse(HttpClientHandler *clientHandler)
 {
-    m_codec = codec;
+    m_clientHandler = clientHandler;
+    m_codec = clientHandler->GetProtocolCodec();
 }
 
 HttpResponse::~HttpResponse()
