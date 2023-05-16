@@ -34,6 +34,11 @@ public:
     bool IsRunning() const;
     void Stop();
 
+    MimeDatabase *GetMimeDatabase() const;
+    IEventLoop *GetEventLoop() const;
+
+    static Webserv *GetInstance();
+
 private:
     IEventLoop *m_eventLoop;
     std::vector<ListenerEvent *> m_listeners;
@@ -42,6 +47,8 @@ private:
     volatile sig_atomic_t m_running;
     MimeDatabase *m_mimeDatabase;
     std::string m_defaultMimeType;
+
+    static Webserv *s_instance;
 
     ServerHost *GetServerHostByAddr(const NetworkAddress4 &addr) const;
 

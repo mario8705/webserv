@@ -7,20 +7,25 @@
 #include "HttpStatusCode.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "HttpProtocolCodec.h"
 #include "HttpClientHandler.h"
 #include "FileRequestHandler.h"
+#include "../Webserv.h"
+#include "../MimeDatabase.h"
 
 Response::Response()
 {
     m_asyncHandler = NULL;
     m_contentLength = 0;
     m_chunked = false;
+    m_body = new DataBuffer;
     SetStatus(HttpStatusCode::Ok);
 }
 
 Response::~Response()
 {
+    delete m_body;
 }
 
 void Response::SetStatusMessage(std::string message)
@@ -73,18 +78,23 @@ IAsyncRequestHandler *Response::GetAsyncHandler() const
 
 bool Response::SendFile(const std::string &path)
 {
-    FileRequestHandler *handler;
+    struct stat st;
+
+    if (stat(path.c_str(), &st) < 0)
+        return false;
+    return SendFile(path, st.st_size);
+}
+
+bool Response::SendFile(const std::string &path, size_t length)
+{
     int fd;
 
     fd = open(path.c_str(), O_RDONLY);
     if (fd < 0)
         return false;
-    if (NULL == (handler = FileRequestHandler::Create(m_clientHandler->GetEventLoop(), this, fd)))
-    {
-        close(fd);
-        return false;
-    }
-    SetAsyncHandler(handler);
+    if (m_headers.find("Content-Type") == m_headers.end())
+        AddHeader("Content-Type", Webserv::GetInstance()->GetMimeDatabase()->GetMimeType(path));
+    SetAsyncHandler(new FileRequestHandler(m_clientHandler->GetEventLoop(), this, fd, length));
     return true;
 }
 
@@ -98,6 +108,11 @@ void Response::SetContentLength(size_t length) {
 }
 
 size_t Response::GetContentLength() const {
+    size_t bodyLength;
+
+    bodyLength = m_body->GetLength();
+    if (bodyLength > 0)
+        return bodyLength;
     return m_contentLength;
 }
 
@@ -107,4 +122,19 @@ void Response::SetChunked(bool chunked) {
 
 bool Response::IsChunked() const {
     return m_chunked;
+}
+
+int Response::Write(const std::string &str)
+{
+    return Write(str.c_str(), str.size());
+}
+
+int Response::Write(const void *data, size_t n)
+{
+    return m_body->Write(data, n);
+}
+
+DataBuffer *Response::GetBodyBuffer() const
+{
+    return m_body;
 }

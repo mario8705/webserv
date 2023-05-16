@@ -16,12 +16,3 @@ HttpResponse::~HttpResponse()
 {
 }
 
-int HttpResponse::Write(const void *data, size_t n)
-{
-    return 0;
-}
-
-void HttpResponse::End()
-{
-
-}

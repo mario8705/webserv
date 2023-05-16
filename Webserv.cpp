@@ -22,8 +22,11 @@
 #include <iostream>
 #include "MimeDatabase.h"
 
+Webserv *Webserv::s_instance = NULL;
+
 Webserv::Webserv()
 {
+    s_instance = this;
     m_eventLoop = new SelectEventLoop;
     m_running = 0;
     m_mimeDatabase = new MimeDatabase("text/plain");
@@ -33,6 +36,7 @@ Webserv::~Webserv()
 {
     tVirtualHostList::const_iterator it;
 
+    s_instance = NULL;
     for (it = m_virtualHosts.begin(); it != m_virtualHosts.end(); ++it)
     {
         delete *it;
@@ -44,6 +48,16 @@ Webserv::~Webserv()
     delete m_mimeDatabase;
 
     BufferChain::ReleasePool();
+}
+
+MimeDatabase *Webserv::GetMimeDatabase() const
+{
+    return m_mimeDatabase;
+}
+
+Webserv *Webserv::GetInstance()
+{
+    return s_instance;
 }
 
 bool Webserv::Bind()
@@ -63,7 +77,7 @@ bool Webserv::Bind()
             serverHost = GetServerHostByAddr(*addrIt);
             if (!serverHost)
             {
-                serverHost = new ServerHost(m_eventLoop, *addrIt);
+                serverHost = new ServerHost(this, *addrIt);
                 m_hosts.push_back(serverHost);
 
                 if (!serverHost->Bind()) {
@@ -119,6 +133,10 @@ void Webserv::Stop()
     m_running = 0;
 }
 
+IEventLoop *Webserv::GetEventLoop() const
+{
+    return m_eventLoop;
+}
 
 bool Webserv::LoadConfig(const std::string &path)
 {

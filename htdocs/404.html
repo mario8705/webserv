@@ -4,20 +4,28 @@
     <title>404 - Not Found</title>
     <meta charset="utf-8">
     <style>
+        html, body {
+            height: 100%;
+        }
+
         body {
             font-family: system-ui, -apple-system, "Verdana", sans-serif;
             color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             background: url('https://static.vecteezy.com/system/resources/previews/009/667/949/original/rose-flower-bouquet-watercolor-for-valentine-free-png.png');
             background-position: 100% 0;
             background-size: 10em 10em;
             background-repeat: no-repeat;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            margin: 0 20% 2em;
         }
 
         h1 {
-            padding-top: 1em;
+            padding-top: 0.5em;
             text-align: center;
             margin: 0.5em 0;
             font-size: 5em;
@@ -28,6 +36,7 @@
         p {
             flex-direction: column;
             font-weight: 300;
+            line-height: 1.2;
         }
 
         a {
@@ -44,30 +53,67 @@
         }
 
         footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
             text-align: center;
             padding: 0.5em;
             background-color: #F5F5F5;
-            margin-top: 1em;
+            margin-top: auto;
             color: #444;
+            justify-self: flex-end;
+        }
+
+        codelol {
+            padding: 1em;
+            margin: 2em 0 0;
+            overflow-x: hidden;
+        }
+
+        pre {
+            font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier, monospace;
+            background-color: #2e2e2e;
+            color: #d6d6d6;
+            margin-top: 2em;
+            padding: 0.5em;
+            overflow-x: auto;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
-    <h1>Error 404</h1>
-    <div class="text">
+    <main>
+        <h1>Error 404</h1>
         <p>
-            The requested URI could not be found, here are some things you can try :
+            The requested URI could not be found, this can be the result of a broken link or
+            a mistyped url, here are some things you can try :
         </p>
         <ul>
             <li><a href="#">Read the documentation</a></li>
             <li><a href="#">Create a route for this URL</a></li>
             <li><a href="#">Setup a custom error document</a></li>
         </ul>
-    </div>
+        <pre><code>---- Request Info ----
+Method: GET
+HTTP Version: 1.1
+Remote address : 127.0.0.1:25643
+Path: /
+
+---- Request Headers ----
+Host: localhost:1234
+Connection: keep-alive
+sec-ch-ua: "Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.42
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Sec-Fetch-Site: none
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Accept-Encoding: gzip, deflate, br
+Accept-Language: fr,fr-FR;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+Cookie: auth_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJoZWxsbyI6IndvcmxkIiwiaWF0IjoxNjg0MjQ1NDMxfQ.bcSTOgGg2W4hxt8e_IsjZT3VjtEghxTFI2nhGpvRti0
+</code></pre>
+    </main>
     <footer>
         <p>webserv v1.0 - tgriffit, rgeral, alavaud</p>
     </footer>
