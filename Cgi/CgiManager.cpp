@@ -16,9 +16,9 @@ CgiManager::CgiManager() {
 
 }
 
-CgiManager::CgiManager(std::string cgiToExecute, std::map<std::string, std::string> &ServerVariablesMap)
+CgiManager::CgiManager(std::string pathToCgi, std::map<std::string, std::string> &ServerVariablesMap)
                        : serVarMap(ServerVariablesMap) {
-    execute(cgiToExecute);
+    execute(pathToCgi);
 }
 
 CgiManager::CgiManager(const CgiManager &copy) {
@@ -30,7 +30,9 @@ CgiManager::~CgiManager() {
 }
 
 CgiManager &CgiManager::operator=(const CgiManager &toAssign) {
-    this->cgiFd = toAssign.cgiFd;
+    this->cgiFdIn = toAssign.cgiFdIn;
+    this->cgiFdOut = toAssign.cgiFdOut;
+    this->cgiPid = toAssign.cgiPid;
     this->serVarMap = toAssign.serVarMap;
     return *this;
 }
@@ -70,13 +72,14 @@ private:
 
 /**
  * Si le CGI s'execute correctement, sa sortie standard est envoyee dans la string CgiManager->cgiResponse.
- * @param cgiName = le Cgi doit se finir par .sh ou .php
+ * @param cgiPath = le Cgi doit se finir par .sh ou .php
  * @throw CgiException::OpenException, CgiException::Dup2Exception, CgiException::ExecException
+ * @return A malloc'd int: cgi's PID, pipe_webserv_to_cgi, pipe_cgi_to_webserv
  */
-void CgiManager::execute(const std::string &cgiName) { //todo: modifier le env original
+int *CgiManager::execute(const std::string &cgiPath) {
 	int fds_in[2], fds_out[2];
     AutoCloseFileDescriptor cgiFdManaged;
-    int cgiFd = open((CGI_PATH + cgiName).c_str(), O_RDWR);
+    int cgiFd = open(cgiPath.c_str(), O_RDWR);
     if (cgiFd < 0)
         throw CgiException::OpenException();
     cgiFdManaged.Replace(cgiFd);
@@ -86,11 +89,8 @@ void CgiManager::execute(const std::string &cgiName) { //todo: modifier le env o
 
     int pid = fork();
     if (pid == -1)
-    {
-
         throw CgiException::ForkException();
-    }
-    if (pid == 0)
+    else if (pid == 0)
     {
         close(fds_out[0]);
 
@@ -101,31 +101,24 @@ void CgiManager::execute(const std::string &cgiName) { //todo: modifier le env o
         if (dup2(fds_out[1], STDOUT_FILENO) == -1)
             throw CgiException::Dup2Exception();
         close(fds_out[1]);
-        std::string executor;
-        if (cgiName.rfind(".php") != std::string::npos)
-            executor = PHP_CMD;
-        else if (cgiName.rfind(".sh") != std::string::npos)
-            executor = BASH_CMD;
-        else
-            throw CgiException::BadFormatException();
-
-        std::string command = " " CGI_PATH + cgiName;
 
         std::vector<std::string> env = convertEnvMap();
         std::vector<std::string> args;
-        args.push_back(command);
+        args.push_back(cgiPath);
 
-        executeProcess(command, args, env);
+        executeProcess(cgiPath, args, env);
         throw CgiException::ExecException();
     }
     else
     {
-        close(fds_out[1]);
+        //close(fds_out[1]);
         close(cgiFd);
     }
-    while (waitpid(pid, NULL, 0) != -1);
-    cgiFd = fds_out[0];
-
+    //while (waitpid(pid, NULL, 0) != -1);
+    cgiPid = pid;
+    cgiFdIn = fds_out[1];
+    cgiFdOut = fds_out[0];
+    return new int[3] {cgiPid,cgiFdIn, cgiFdOut};
 }
 
 std::vector<std::string> CgiManager::convertEnvMap() {
@@ -174,9 +167,17 @@ int executeProcess(const std::string &path, const std::vector<std::string> &args
 }
 
 
-int CgiManager::getCgiFd() const
+int CgiManager::getCgiFdIn() const
 {
-	return cgiFd;
+	return cgiFdIn;
+}
+
+int CgiManager::getCgiFdOut() const {
+    return cgiFdOut;
+}
+
+int CgiManager::getCgiPid() const {
+    return cgiPid;
 }
 
 const char *CgiManager::CgiException::ForkException::what() const throw() {

@@ -16,21 +16,24 @@
 class CgiManager {
 
     //const std::string knownCgi[3] = {"python-cgi.py", "php-cgi.php", "cpp-cgi"};
-    int cgiFd;
+    int cgiFdIn, cgiFdOut;
+    int cgiPid;
     std::map<std::string, std::string> serVarMap;
 
 
 public:
 
 	CgiManager();
-	CgiManager(std::string cgiToExecute, std::map<std::string, std::string> &ServerVariablesMap);
+	CgiManager(std::string pathToCgi, std::map<std::string, std::string> &ServerVariablesMap);
 	CgiManager(const CgiManager &copy);
 	~CgiManager();
 	CgiManager &operator=(const CgiManager &toAssign);
-    void execute(const std::string &cgiName);
+    int* execute(const std::string &cgiPath);
 
 	std::vector<std::string> convertEnvMap();
-	int getCgiFd() const;
+	int getCgiFdIn() const;
+	int getCgiFdOut() const;
+	int getCgiPid() const;
 
     class CgiException: public std::exception
     {
