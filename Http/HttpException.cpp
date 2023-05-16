@@ -4,21 +4,16 @@
 
 #include "HttpException.h"
 
-HttpException::HttpException(int status)
+HttpException::HttpException(int status) throw()
     : m_status(status)
 {
 }
 
-HttpException::~HttpException()
+HttpException::~HttpException() throw()
 {
 }
 
 int HttpException::GetStatus() const
 {
     return m_status;
-}
-
-std::string HttpException::GetStatusMessage() const
-{
-    return m_message;
 }

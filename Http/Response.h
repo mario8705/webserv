@@ -42,7 +42,7 @@ public:
     void SetAsyncHandler(IAsyncRequestHandler *asyncHandler);
     IAsyncRequestHandler *GetAsyncHandler() const;
 
-    void SendFile(const std::string &path);
+    bool SendFile(const std::string &path);
 
     HttpProtocolCodec *GetHttpCodec() const;
 

@@ -11,6 +11,7 @@
 #include "../IO/BufferEvent.h"
 #include "AsyncRequestHandler.h"
 #include "../string_utils.hpp"
+#include "HttpException.h"
 
 HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output)
         : m_handler(handler), m_inputBuffer(input), m_outputBuffer(output), m_bufferEvent(handler->GetBufferEvent())
@@ -190,7 +191,20 @@ void HttpProtocolCodec::DispatchRequest()
     /* Disable reading while processing the request */
     m_bufferEvent->Enable(kEvent_Write);
 
-    m_handler->HandleRequest(&request, &response);
+    try {
+        m_handler->HandleRequest(&request, &response);
+    }
+    catch (HttpException &e)
+    {
+        /* TODO unhandled exception */
+        /* Exception shall be handled inside ServerHost */
+        /* so we should never have to catch it here */
+        printf("Exception with code : %d\n", e.GetStatus());
+    }
+    catch (...)
+    {
+        printf("Unexpected error\n");
+    }
 
     headers.swap(response.GetHeaders());
 

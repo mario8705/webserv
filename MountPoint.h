@@ -4,7 +4,11 @@
 
 #ifndef WEBSERV_MOUNTPOINT_H
 #define WEBSERV_MOUNTPOINT_H
+#include "Http/RequestHandler.h"
+#include "Http/URL.h"
 #include <string>
+#include <vector>
+#include <map>
 
 enum RouteMatch
 {
@@ -13,10 +17,13 @@ enum RouteMatch
     kRouteMatch_Regex,
 };
 
-class MountPoint
+class VirtualHost;
+class HttpException;
+
+class MountPoint : public IRequestHandler
 {
 public:
-    MountPoint(RouteMatch routeMatch, const std::string &path);
+    MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path);
     ~MountPoint();
 
     void SetRoot(const std::string &root);
@@ -24,10 +31,20 @@ public:
 
     bool Matches(const std::string &path) const;
 
+    void HandleRequest(Request *request, Response *response);
+    bool HandleException(Request *request, Response *response, HttpException *e);
+
+    void AddNestedMount(MountPoint *mountPoint);
+
 private:
+    std::string LocateFile(const URL &url) const;
+
+    VirtualHost *m_virtualHost;
     RouteMatch m_routeMatch;
+    std::map<int, std::string> m_errorDocuments;
     std::string m_path;
     std::string m_root;
+    std::vector<MountPoint *> m_nestedMounts;
 };
 
 

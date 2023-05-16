@@ -200,8 +200,8 @@ struct root_validator
 class ServerLocationBlockConsumer : public PropertyConsumer
 {
 public:
-    ServerLocationBlockConsumer(ConfigProperty *locationBlock, VirtualHost *virtualHost)
-        : PropertyConsumer(locationBlock), m_virtualHost(virtualHost)
+    ServerLocationBlockConsumer(ConfigProperty *locationBlock, VirtualHost *virtualHost, MountPoint *parentRoute)
+        : PropertyConsumer(locationBlock), m_virtualHost(virtualHost), m_parentRoute(parentRoute)
     {
         m_mountPoint = NULL;
     }
@@ -237,16 +237,17 @@ public:
             }
             ++pathIndex;
         }
-        m_mountPoint = new MountPoint(routeMatch, params[pathIndex]);
+        m_mountPoint = new MountPoint(m_virtualHost, routeMatch, params[pathIndex]);
 
         AcceptProperties("root", &ServerLocationBlockConsumer::ParseRootProperty, this, root_validator());
 
-        m_virtualHost->Mount(m_mountPoint);
+        m_parentRoute->AddNestedMount(m_mountPoint);
     }
 
 private:
     VirtualHost *m_virtualHost;
     MountPoint *m_mountPoint;
+    MountPoint *m_parentRoute;
 
     void ParseRootProperty(ConfigProperty *rootProp)
     {
@@ -266,6 +267,8 @@ public:
     {
         AcceptProperties("listen", &ServerBlockConsumer::ParseListenProperty,
                          this, listen_validator());
+        AcceptProperties("root", &ServerBlockConsumer::ParseRootProperty,
+                     this, root_validator());
         AcceptBlocks("location", &ServerBlockConsumer::ParseLocationBlock,
                      this);
     }
@@ -277,9 +280,14 @@ private:
         m_virtualHost->AddListenAddress(NetworkAddress4(0, 8080));
     }
 
+    void ParseRootProperty(ConfigProperty *configProperty)
+    {
+        m_virtualHost->GetRootMountPoint()->SetRoot(configProperty->getParams()[1]);
+    }
+
     void ParseLocationBlock(ConfigProperty *locationBlock)
     {
-        ServerLocationBlockConsumer locationConsumer(locationBlock, m_virtualHost);
+        ServerLocationBlockConsumer locationConsumer(locationBlock, m_virtualHost, m_virtualHost->GetRootMountPoint());
 
         locationConsumer.ConsumeAll();
     }

@@ -43,6 +43,8 @@ public:
         return m_bindAddress;
     }
 
+   // std::string GetRoot() const;
+
 private:
     VirtualHost *MatchVirtualHost(std::string host);
 

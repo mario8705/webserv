@@ -71,23 +71,21 @@ IAsyncRequestHandler *Response::GetAsyncHandler() const
     return m_asyncHandler;
 }
 
-void Response::SendFile(const std::string &path)
+bool Response::SendFile(const std::string &path)
 {
     FileRequestHandler *handler;
     int fd;
 
     fd = open(path.c_str(), O_RDONLY);
     if (fd < 0)
-    {
-        printf("404\n");
-        return ;
-    }
+        return false;
     if (NULL == (handler = FileRequestHandler::Create(m_clientHandler->GetEventLoop(), this, fd)))
     {
         close(fd);
-        return ; /* TODO ???? Which error code should we use ? 500 ? */
+        return false;
     }
     SetAsyncHandler(handler);
+    return true;
 }
 
 HttpProtocolCodec *Response::GetHttpCodec() const
