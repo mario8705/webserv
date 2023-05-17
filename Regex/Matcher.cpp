@@ -78,7 +78,6 @@ bool Matcher::MatchElements(std::vector<RegexElement> &elements, size_t &pos, st
                 {
                     break ;
                 }
-                printf("Sub group matched: %s\n", groupResult.c_str());
             }
         }
         if (occ < elements[i].min)

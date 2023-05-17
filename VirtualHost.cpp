@@ -51,7 +51,7 @@ void VirtualHost::DispatchRequest(MountPoint *mountPoint, Request *request, Resp
     {
         if (!mountPoint->HandleException(request, response, &e))
         {
-            printf("Unhandled exception, showing default error page !\n");
+            /* TODO unhandling exception */
         }
     }
 }

@@ -12,6 +12,7 @@
 #include "AsyncRequestHandler.h"
 #include "../string_utils.hpp"
 #include "HttpException.h"
+#include <stdio.h>
 
 HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output)
         : m_handler(handler), m_inputBuffer(input), m_outputBuffer(output), m_bufferEvent(handler->GetBufferEvent())

@@ -14,6 +14,7 @@
 #include "string_utils.hpp"
 #include "Network/ListenerEvent.h"
 #include "Webserv.h"
+#include <stdio.h>
 
 int fd_set_non_blocking(int fd);
 

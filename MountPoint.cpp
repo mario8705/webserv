@@ -92,7 +92,6 @@ void MountPoint::HandleRequest(Request *request, Response *response)
             return mountPoint->HandleRequest(request, response);
         }
     }
-    printf("[404] %s\n", request->GetRawPath().c_str());
     throw HttpException(404);
 }
 
