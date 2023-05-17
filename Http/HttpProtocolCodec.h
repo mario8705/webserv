@@ -62,6 +62,7 @@ private:
     HttpVersion m_httpVersion;
     std::string m_rawPath;
     IAsyncRequestHandler *m_asyncHandler;
+    bool m_pendingFinalizeResponse;
 };
 
 
