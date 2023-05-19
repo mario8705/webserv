@@ -12,6 +12,8 @@
 #define CGI_PATH "cgi-bin/"
 #define PHP_CMD "/bin/php"
 #define BASH_CMD "/bin/bash"
+#define FD_READ 0
+#define FD_WRITE 1
 
 class CgiManager {
 
@@ -28,7 +30,7 @@ public:
 	CgiManager(const CgiManager &copy);
 	~CgiManager();
 	CgiManager &operator=(const CgiManager &toAssign);
-    int* execute(const std::string &cgiPath);
+    void execute(const std::string &cgiPath);
 
 	std::vector<std::string> convertEnvMap();
 	int getCgiFdIn() const;
