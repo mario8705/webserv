@@ -70,6 +70,11 @@ private:
     int m_fd;
 };
 
+static void cleanFds(int fds[2])
+{
+    close(fds[FD_READ]), close(fds[FD_WRITE]);
+}
+
 /**
  * Si le CGI s'execute correctement, sa sortie standard est envoyee dans la string CgiManager->cgiResponse.
  * @param cgiPath = le Cgi doit se finir par .sh ou .php
@@ -85,23 +90,37 @@ void CgiManager::execute(const std::string &cgiPath) {
     cgiFdManaged.Replace(cgiFd);
 
     if (pipe(fds_out) < 0 || pipe(fds_in) < 0)
+    {
+        close(fds_in[FD_READ]), close(fds_in[FD_WRITE]);
+        close(fds_out[FD_READ]), close(fds_out[FD_WRITE]);
         throw CgiException::PipeException();
+    }
 
     int pid = fork();
     if (pid == -1)
         throw CgiException::ForkException();
     else if (pid == 0)
     {
-        dup2(fds_in[FD_READ], fds_out[FD_READ]);
+        if (dup2(fds_in[FD_READ], fds_out[FD_READ]) < 0)
+        {
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
         close(fds_in[FD_READ]);
         close(fds_out[FD_WRITE]);
 
         if (dup2(cgiFd, fds_in[FD_WRITE]) == -1)
-            throw CgiException::Dup2Exception();
+        {
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
         close(cgiFd);
 
         if (dup2(fds_in[FD_WRITE], fds_out[FD_READ]) == -1)
-            throw CgiException::Dup2Exception();
+        {
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
         close(fds_in[FD_WRITE]);
 
         std::vector<std::string> env = convertEnvMap();
@@ -109,7 +128,11 @@ void CgiManager::execute(const std::string &cgiPath) {
         args.push_back(cgiPath);
 
         executeProcess(cgiPath, args, env);
-        throw CgiException::ExecException();
+        {
+            std::cerr << "CGI failed to execute" << std::endl;
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
     }
     else
     {
@@ -117,7 +140,6 @@ void CgiManager::execute(const std::string &cgiPath) {
         close(fds_out[FD_WRITE]);
         close(cgiFd);
     }
-    //while (waitpid(pid, NULL, 0) != -1);
     cgiPid = pid;
     cgiFdIn = fds_in[FD_WRITE];
     cgiFdOut = fds_out[FD_READ];
