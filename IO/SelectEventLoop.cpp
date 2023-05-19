@@ -49,7 +49,6 @@ bool SelectEventLoop::LoopOnce()
     int nfds;
     int n;
     tEventMap::iterator it;
-    std::vector<IOEvent *> readEvents;
     std::vector<IOEvent *> writeEvents;
     size_t i;
 
@@ -78,13 +77,39 @@ bool SelectEventLoop::LoopOnce()
         fd = it->first;
         evt = it->second;
         if (FD_ISSET(fd, &rdset))
-            readEvents.push_back(evt);
+            m_pendingReads.push_back(evt);
         if (FD_ISSET(fd, &wrset))
             writeEvents.push_back(evt);
     }
-    for (i = 0; i < readEvents.size(); ++i)
-        readEvents[i]->NotifyRead();
+    ProcessPendingEvents();
     for (i = 0; i < writeEvents.size(); ++i)
         writeEvents[i]->NotifyWrite();
     return false;
+}
+
+void SelectEventLoop::RaiseReadEvent(IOEvent *evt)
+{
+    size_t i;
+
+    /*
+     * Avoid calling the callback twice as it can lead to blocking reads.
+     */
+    for (i = 0; i < m_pendingReads.size(); ++i)
+    {
+        if (m_pendingReads[i] == evt)
+            return ;
+    }
+    m_pendingReads.push_back(evt);
+}
+
+void SelectEventLoop::ProcessPendingEvents()
+{
+    IOEvent *evt;
+
+    while (!m_pendingReads.empty())
+    {
+        evt = m_pendingReads.back();
+        m_pendingReads.pop_back();
+        evt->NotifyRead();
+    }
 }

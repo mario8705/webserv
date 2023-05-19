@@ -5,12 +5,14 @@
 #ifndef WEBSERV_SELECTEVENTLOOP_H
 #define WEBSERV_SELECTEVENTLOOP_H
 #include "EventLoop.h"
+#include <vector>
 #include <map>
 
 class SelectEventLoop : public IEventLoop
 {
 public:
     typedef std::map<int, IOEvent *> tEventMap;
+    typedef std::vector<IOEvent *> tRaisedEventList;
 
     SelectEventLoop();
     ~SelectEventLoop();
@@ -20,8 +22,13 @@ public:
     
     bool LoopOnce();
 
+    void RaiseReadEvent(IOEvent *evt);
+
 private:
+    void ProcessPendingEvents();
+
     tEventMap m_eventMap;
+    tRaisedEventList m_pendingReads;
 };
 
 
