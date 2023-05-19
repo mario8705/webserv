@@ -6,8 +6,8 @@
 #include <sstream>
 #include "HttpClientHandler.h"
 #include "../IO/DataBuffer.h"
-#include "Internal/HttpRequest.h"
-#include "Internal/HttpResponse.h"
+#include "Request.h"
+#include "Response.h"
 #include "../IO/BufferEvent.h"
 #include "AsyncRequestHandler.h"
 #include "../string_utils.hpp"
@@ -190,11 +190,15 @@ void HttpProtocolCodec::WriteHeaders(const tHeaderMap &headers)
 
 void HttpProtocolCodec::DispatchRequest()
 {
-    HttpRequest request(m_handler, m_method, m_rawPath, m_httpVersion, m_headers);
-    HttpResponse response(m_handler);
+    Request request(m_handler, m_headers);
+    Response response(m_handler);
     tHeaderMap headers;
     IAsyncRequestHandler *asyncHandler;
     DataBuffer *body;
+
+    request.SetMethod(m_method);
+    request.SetRawPath(m_rawPath);
+    request.SetProtocolVersion(m_httpVersion);
 
     /* Disable reading while processing the request */
     m_bufferEvent->Enable(kEvent_Write);

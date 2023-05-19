@@ -21,6 +21,8 @@ enum HttpTransferEncoding
 
 class Response
 {
+    friend class HttpProtocolCodec;
+
 public:
     typedef std::map<std::string, std::string> tHttpHeadersMap;
 
@@ -58,8 +60,9 @@ public:
     DataBuffer *GetBodyBuffer() const;
 
 protected:
-    Response();
+    explicit Response(HttpClientHandler *clientHandler);
 
+private:
     HttpClientHandler *m_clientHandler;
     HttpProtocolCodec *m_codec;
     int m_status;

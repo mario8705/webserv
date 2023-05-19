@@ -168,6 +168,19 @@ void Webserv::ParseHttpBlock(ConfigProperty *httpBlock)
 
     httpConsumer.AcceptBlocks("types", &Webserv::ParseTypesBlock, this);
     httpConsumer.AcceptBlocks("server", &Webserv::ParseServerBlock, this);
+
+    PropertyIterator it = httpBlock->FindAllProps("cgi_param");
+    ConfigProperty *param;
+
+    while ((param = it.Next()))
+    {
+        if (param->GetParamsCount() != 3)
+        {
+            /* TODO warning ? */
+            continue ;
+        }
+        m_rootCgiParams[param->getParams()[1]] = param->getParams()[2];
+    }
 }
 
 struct mime_validator
@@ -336,4 +349,9 @@ void Webserv::ParseMimeType(ConfigProperty *mime)
         if (!m_mimeDatabase->RegisterType(params[j], params[0]))
             std::cerr << "Duplicate mime type entry for " << params[j] << std::endl;
     }
+}
+
+const std::map<std::string, std::string> &Webserv::GetRootCgiParams() const
+{
+    return m_rootCgiParams;
 }

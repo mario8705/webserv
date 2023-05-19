@@ -9,11 +9,12 @@
 #include "Http/Response.h"
 #include "Http/HttpException.h"
 #include "VirtualHost.h"
+#include "Webserv.h"
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
 {
-    m_errorDocuments[404] = "404.html";
+    m_errorDocuments[404] = "404.html"; /* TODO inject from configuration */
 }
 
 MountPoint::~MountPoint()
@@ -46,6 +47,7 @@ bool MountPoint::Matches(const std::string &path) const
 }
 
 #include <dirent.h>
+#include <stdio.h>
 
 void MountPoint::HandleRequest(Request *request, Response *response)
 {
@@ -54,6 +56,16 @@ void MountPoint::HandleRequest(Request *request, Response *response)
     URL url(request->GetRawPath());
     std::string path;
     struct stat st;
+
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string>::const_iterator params_it;
+
+    PopulateCgiParams(request, params);
+
+    for (params_it = params.begin(); params_it != params.end(); ++params_it)
+    {
+        printf("CGI PARAM %s : %s\n", params_it->first.c_str(), params_it->second.c_str());
+    }
 
     path = LocateFile(url);
     if (stat(path.c_str(), &st) >= 0)
@@ -135,4 +147,61 @@ void MountPoint::SetRoot(const std::string &root)
 std::string MountPoint::GetRoot() const
 {
     return m_root;
+}
+
+static std::string ResolveVars(const std::string &input, const std::map<std::string, std::string> &vars)
+{
+    std::map<std::string, std::string>::const_iterator it;
+    std::string ret;
+    size_t pos;
+    size_t last;
+
+    for (pos = 0; pos < input.size(); )
+    {
+        if ('$' == input[pos] && (pos == 0 || input[pos - 1] != '\\'))
+        {
+            last = ++pos;
+            while (last < input.size() && (input[last] == '_' || std::islower(input[last])))
+                ++last;
+            it = vars.find(input.substr(pos, last - pos));
+            if (it != vars.end()) {
+                ret.insert(ret.end(), it->second.begin(), it->second.end());
+                pos = last;
+            }
+            else
+            {
+                ret.insert(ret.end(), '$');
+            }
+        }
+        else
+        {
+            last = pos + 1;
+            while (last < input.size() && '$' != input[last])
+                ++last;
+            ret.insert(ret.end(), input.begin() + pos, input.begin() + last);
+            pos = last;
+        }
+    }
+    return ret;
+}
+
+void MountPoint::PopulateCgiParams(Request *request, std::map<std::string, std::string> &paramsOut)
+{
+    const std::map<std::string, std::string> &rootParams = Webserv::GetInstance()->GetRootCgiParams();
+    std::map<std::string, std::string>::const_iterator it;
+    std::map<std::string, std::string> vars;
+
+    vars["server_protocol"] = request->GetProtocolVersion().ToString();
+    vars["server_port"] = "8080";
+    vars["webserv_version"] = "1.0";
+    vars["server_name"] = "localhost";
+
+    for (it = rootParams.begin(); it != rootParams.end(); ++it)
+    {
+        paramsOut[it->first] = ResolveVars(it->second, vars);
+    }
+    for (it = m_cgiParams.begin(); it != m_cgiParams.end(); ++it)
+    {
+        paramsOut[it->first] = ResolveVars(it->second, vars);
+    }
 }

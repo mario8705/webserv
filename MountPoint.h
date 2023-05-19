@@ -36,6 +36,8 @@ public:
 
     void AddNestedMount(MountPoint *mountPoint);
 
+    void PopulateCgiParams(Request *request, std::map<std::string, std::string> &paramsOut);
+
 private:
     std::string LocateFile(const URL &url) const;
 
@@ -45,6 +47,7 @@ private:
     std::string m_path;
     std::string m_root;
     std::vector<MountPoint *> m_nestedMounts;
+    std::map<std::string, std::string> m_cgiParams;
 };
 
 

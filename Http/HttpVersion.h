@@ -21,6 +21,8 @@ public:
 
     bool Parse(const std::string &version);
 
+    std::string ToString() const;
+
     static HttpVersion kHttpVersion_1_0;
     static HttpVersion kHttpVersion_1_1;
 

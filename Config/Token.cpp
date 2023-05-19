@@ -65,7 +65,6 @@ bool Token::tokenization(const std::string &filename, std::vector<Token *> &toke
         else if (ch == '\'')
         {
             line.clear();
-            line.insert(line.end(), ch);
             while (file.get(ch))
             {
                 ++col;

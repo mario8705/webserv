@@ -14,6 +14,8 @@ class HttpClientHandler;
 
 class Request
 {
+    friend class HttpProtocolCodec;
+
 public:
     typedef std::map<std::string, std::string> tHttpHeaders;
 
@@ -22,15 +24,23 @@ public:
     HttpMethod GetMethod() const;
     std::string GetRawPath() const;
 
+    HttpVersion GetProtocolVersion() const;
+
     const tHttpHeaders &GetHeaders() const;
 
     HttpProtocolCodec *GetHttpCodec() const;
 
 protected:
-    explicit Request(tHttpHeaders &headers);
+    Request(HttpClientHandler *clientHandler, tHttpHeaders &headers);
 
+    void SetMethod(HttpMethod method);
+    void SetRawPath(const std::string &rawPath);
+    void SetProtocolVersion(const HttpVersion& httpVersion);
+
+private:
     HttpClientHandler *m_clientHandler;
     HttpMethod m_method;
+    HttpVersion m_httpVersion;
     std::string m_rawPath;
     tHttpHeaders &m_headers;
     HttpProtocolCodec *m_codec;

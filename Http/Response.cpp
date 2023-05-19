@@ -14,15 +14,6 @@
 #include "../Webserv.h"
 #include "../MimeDatabase.h"
 
-Response::Response()
-{
-    m_asyncHandler = NULL;
-    m_contentLength = 0;
-    m_chunked = false;
-    m_body = new DataBuffer;
-    SetStatus(HttpStatusCode::Ok);
-}
-
 Response::~Response()
 {
     delete m_body;
@@ -137,4 +128,16 @@ int Response::Write(const void *data, size_t n)
 DataBuffer *Response::GetBodyBuffer() const
 {
     return m_body;
+}
+
+Response::Response(HttpClientHandler *clientHandler)
+    : m_clientHandler(clientHandler)
+{
+    m_codec = clientHandler->GetProtocolCodec();
+    m_asyncHandler = NULL;
+    m_contentLength = 0;
+    m_status = 200;
+    m_chunked = false;
+    m_body = new DataBuffer;
+    SetStatus(HttpStatusCode::Ok);
 }

@@ -1,7 +1,8 @@
-//
+//sstream
 // Created by Alexis Lavaud on 05/05/2023.
 //
 #include "HttpVersion.h"
+#include <sstream>
 
 HttpVersion::HttpVersion()
     : m_major(1), m_minor(0)
@@ -46,3 +47,11 @@ bool HttpVersion::Parse(const std::string &version) {
 
 HttpVersion HttpVersion::kHttpVersion_1_0 = HttpVersion(1, 0);
 HttpVersion HttpVersion::kHttpVersion_1_1 = HttpVersion(1, 1);
+
+std::string HttpVersion::ToString() const
+{
+    std::stringstream ss;
+
+    ss << *this;
+    return ss.str();
+}
