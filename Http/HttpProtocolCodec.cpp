@@ -12,12 +12,14 @@
 #include "AsyncRequestHandler.h"
 #include "../string_utils.hpp"
 #include "HttpException.h"
+#include <stdio.h>
 
 HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output)
         : m_handler(handler), m_inputBuffer(input), m_outputBuffer(output), m_bufferEvent(handler->GetBufferEvent())
 {
     m_requestHeaderParsed = false;
     m_asyncHandler = NULL;
+    m_pendingFinalizeResponse = false;
 
     m_methods.insert(std::make_pair("GET", kHttpMethod_Get));
     m_methods.insert(std::make_pair("POST", kHttpMethod_Post));
@@ -60,8 +62,10 @@ void HttpProtocolCodec::ProcessDataInput()
         }
         if (dispatchRequest)
         {
+            dispatchRequest = false;
             DispatchRequest();
-            return ;
+            if (m_asyncHandler)
+                return ;
         }
     }
     if (m_inputBuffer->GetLength() >= m_inputBuffer->GetReadHighWatermark())
@@ -79,6 +83,8 @@ void HttpProtocolCodec::OnOutputDrained()
     {
         m_asyncHandler->OnOutputDrained();
     }
+    if (m_pendingFinalizeResponse)
+        FinalizeResponse();
 }
 
 void HttpProtocolCodec::EncodeResponse(Response *response)
@@ -103,6 +109,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
     httpVersion = "HTTP/1.0";
     if (methodSep == std::string::npos)
     {
+        printf("Invalid request !!\n");
         /* TODO invalid request */
         return ;
     }
@@ -187,6 +194,7 @@ void HttpProtocolCodec::DispatchRequest()
     HttpResponse response(m_handler);
     tHeaderMap headers;
     IAsyncRequestHandler *asyncHandler;
+    DataBuffer *body;
 
     /* Disable reading while processing the request */
     m_bufferEvent->Enable(kEvent_Write);
@@ -221,15 +229,26 @@ void HttpProtocolCodec::DispatchRequest()
     WriteHeaders(headers);
     m_outputBuffer->PutString("\r\n");
 
-    if (NULL != (asyncHandler = response.GetAsyncHandler()))
+    m_asyncHandler = response.GetAsyncHandler();
+    printf("Wesh\n");
+
+    body = response.GetBodyBuffer();
+    if (body->GetLength() > 0)
     {
-        m_asyncHandler = asyncHandler;
+        m_outputBuffer->AddBuffer(body);
+        FinalizeResponse();
     }
 }
 
 void HttpProtocolCodec::FinalizeResponse()
 {
     tHeaderMap::const_iterator it;
+
+    if (m_outputBuffer->GetLength() > 0)
+    {
+        m_pendingFinalizeResponse = true;
+        return ;
+    }
 
     delete m_asyncHandler;
     m_asyncHandler = NULL;
@@ -252,6 +271,7 @@ void HttpProtocolCodec::FinalizeResponse()
 
     m_headers.clear();
     m_requestHeaderParsed = false;
+    m_pendingFinalizeResponse = false;
 
     /* Re-enable reads to receive the next request */
     m_bufferEvent->Enable(kEvent_Read);

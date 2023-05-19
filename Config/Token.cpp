@@ -22,7 +22,7 @@ std::string Token::getToken() const
 
 bool Token::tokenization(const std::string &filename, std::vector<Token *> &tokens)
 {
-    std::ifstream file(filename);
+    std::ifstream file(filename.c_str());
     std::string line;
     char ch;
     int nline;

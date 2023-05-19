@@ -15,6 +15,7 @@ class IEventLoop;
 class HttpClientHandler;
 class VirtualHost;
 class ListenerEvent;
+class Webserv;
 
 class ServerHost : public IConnectionHandler, public IRequestHandler
 {
@@ -22,7 +23,7 @@ public:
     typedef std::vector<HttpClientHandler *> tClientList;
     typedef std::map<std::string, VirtualHost *> tVirtualHostMap;
 
-    ServerHost(IEventLoop *eventLoop, NetworkAddress4 bindAddress);
+    ServerHost(Webserv *webserv, NetworkAddress4 bindAddress);
     ~ServerHost();
 
     bool Bind();
@@ -48,6 +49,7 @@ public:
 private:
     VirtualHost *MatchVirtualHost(std::string host);
 
+    Webserv *m_webserv;
     IEventLoop *m_eventLoop;
     ListenerEvent *m_listenerEvent;
     NetworkAddress4 m_bindAddress;

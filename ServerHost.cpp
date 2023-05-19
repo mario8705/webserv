@@ -13,11 +13,13 @@
 #include "VirtualHost.h"
 #include "string_utils.hpp"
 #include "Network/ListenerEvent.h"
+#include "Webserv.h"
+#include <stdio.h>
 
 int fd_set_non_blocking(int fd);
 
-ServerHost::ServerHost(IEventLoop *eventLoop, NetworkAddress4 bindAddress)
-    : m_eventLoop(eventLoop), m_bindAddress(bindAddress)
+ServerHost::ServerHost(Webserv *webserv, NetworkAddress4 bindAddress)
+    : m_webserv(webserv), m_eventLoop(webserv->GetEventLoop()), m_bindAddress(bindAddress)
 {
     m_listenerEvent = NULL;
 }
@@ -32,7 +34,7 @@ bool ServerHost::Bind()
     if (m_listenerEvent)
         delete m_listenerEvent;
     m_listenerEvent = ListenerEvent::CreateAndBind(m_eventLoop, this, m_bindAddress, 10);
-    if (m_listenerEvent)
+    if (m_listenerEvent) /* TODO replace with logger */
         printf("Listening on :%d\n", m_bindAddress.GetPort());
     return (m_listenerEvent != NULL);
 }

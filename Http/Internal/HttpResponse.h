@@ -14,9 +14,6 @@ class HttpResponse : public Response
 public:
     explicit HttpResponse(HttpClientHandler *clientHandler);
     ~HttpResponse();
-
-    int Write(const void *data, size_t n);
-    void End();
 };
 
 

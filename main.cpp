@@ -2,11 +2,9 @@
 #include "Webserv.h"
 #include <iostream>
 
-static Webserv *s_instance = NULL;
-
 static void handler_stub(int)
 {
-    s_instance->Stop();
+    Webserv::GetInstance()->Stop();
 }
 
 std::string subsitute_vars(const std::string &input, const std::map<std::string, std::string> &vars)
@@ -62,8 +60,6 @@ int main(int argc, char *argv[])
         std::cerr << "Could not load configuration" << std::endl;
         return 1;
     }
-
-    s_instance = &webserv;
 
     if (!webserv.Bind())
         return 1;

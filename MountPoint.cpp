@@ -2,6 +2,7 @@
 // Created by Alexis Lavaud on 08/05/2023.
 //
 
+#include <sys/stat.h>
 #include "MountPoint.h"
 #include "Regex/Pattern.h"
 #include "Http/Request.h"
@@ -25,16 +26,6 @@ MountPoint::~MountPoint()
     }
 }
 
-void MountPoint::SetRoot(const std::string &root)
-{
-    m_root = root;
-}
-
-std::string MountPoint::GetRoot() const
-{
-    return m_root;
-}
-
 bool MountPoint::Matches(const std::string &path) const
 {
     switch (m_routeMatch)
@@ -54,13 +45,44 @@ bool MountPoint::Matches(const std::string &path) const
     return false;
 }
 
+#include <dirent.h>
+
 void MountPoint::HandleRequest(Request *request, Response *response)
 {
     std::vector<MountPoint *>::iterator it;
     MountPoint *mountPoint;
+    URL url(request->GetRawPath());
+    std::string path;
+    struct stat st;
 
-    if (response->SendFile(LocateFile(URL(request->GetRawPath()))))
-        return ;
+    path = LocateFile(url);
+    if (stat(path.c_str(), &st) >= 0)
+    {
+        if (S_ISDIR(st.st_mode))
+        {
+            DIR *dirp;
+            struct dirent *dent;
+
+            response->AddHeader("Content-Type", "text/html");
+
+            if (NULL != (dirp = opendir(path.c_str())))
+            {
+                while (NULL != (dent = readdir(dirp)))
+                {
+                    response->Write("<p>");
+                    response->Write(dent->d_name);
+                    response->Write("</p>");
+                }
+                closedir(dirp);
+            }
+            return ;
+        }
+        else
+        {
+            if (response->SendFile(path, st.st_size))
+                return ;
+        }
+    }
     for (it = m_nestedMounts.begin(); it != m_nestedMounts.end(); ++it)
     {
         mountPoint = *it;
@@ -70,20 +92,22 @@ void MountPoint::HandleRequest(Request *request, Response *response)
             return mountPoint->HandleRequest(request, response);
         }
     }
-    printf("[404] %s\n", request->GetRawPath().c_str());
     throw HttpException(404);
 }
 
 bool MountPoint::HandleException(Request *request, Response *response, HttpException *e)
 {
     std::map<int, std::string>::const_iterator it;
+    std::string path;
 
     it = m_errorDocuments.find(e->GetStatus());
     if (m_errorDocuments.end() != it)
     {
+        path = LocateFile(URL(it->second));
+
+        /* TODO let the request handler select the appropriate mime type */
         /* TODO match response status to exception's */
-        /* TODO SendFile should return false if no file could be found */
-        if ((response->SendFile(LocateFile(URL(it->second))), 1))
+        if (response->SendFile(path))
         {
             return true;
         }
@@ -101,4 +125,14 @@ std::string MountPoint::LocateFile(const URL &url) const
     if (!m_root.empty())
         return url.GetAbsolutePath(m_root);
     return url.GetAbsolutePath(m_virtualHost->GetRootMountPoint()->GetRoot());
+}
+
+void MountPoint::SetRoot(const std::string &root)
+{
+    m_root = root;
+}
+
+std::string MountPoint::GetRoot() const
+{
+    return m_root;
 }

@@ -16,6 +16,8 @@ class HttpProtocolCodec;
 class FileRequestHandler : public IAsyncRequestHandler, public IBufferEventHandler
 {
 public:
+
+    FileRequestHandler(IEventLoop *eventLoop, Response *response, int fd, size_t length);
     ~FileRequestHandler();
 
     void HandleRead(DataBuffer *buffer);
@@ -24,11 +26,7 @@ public:
 
     void OnOutputDrained();
 
-    static FileRequestHandler *Create(IEventLoop *eventLoop, Response *response, int fd);
-
 private:
-    FileRequestHandler(IEventLoop *eventLoop, Response *response, int fd, size_t length);
-
     BufferEvent *m_event;
     HttpProtocolCodec *m_codec;
     size_t m_length;
