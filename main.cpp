@@ -1,10 +1,22 @@
 #include <csignal>
-#include "Webserv.h"
 #include <iostream>
+#include <sys/wait.h>
+#include "Webserv.h"
 
 static void handler_stub(int)
 {
     Webserv::GetInstance()->Stop();
+}
+
+static void collect_child_status(int)
+{
+    pid_t p;
+    int status;
+
+    while ((p = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+        printf("Child %d died\n", p);
+    }
 }
 
 std::string subsitute_vars(const std::string &input, const std::map<std::string, std::string> &vars)
@@ -43,10 +55,40 @@ std::string subsitute_vars(const std::string &input, const std::map<std::string,
     return ret;
 }
 
+#include "Cgi/CgiManager.hpp"
+
 int main(int argc, char *argv[])
 {
     Webserv webserv;
     std::string configPath = "webserv.conf";
+
+    CgiManager::tEnvMap envMap;
+
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, collect_child_status);
+    signal(SIGTERM, handler_stub);
+
+    envMap["SCRIPT_FILENAME"] = "htdocs/phpinfo.php";
+    envMap["CONTENT_TYPE"] = "application/json";
+    envMap["REDIRECT_STATUS"] = "200";
+    envMap["CONTENT_LENGTH"] = "2";
+    envMap["REQUEST_METHOD"] = "POST";
+
+    CgiManager cgi("/usr/local/bin/php-cgi", envMap);
+    cgi.SpawnSubProcess();
+
+    write(cgi.GetMOSI(), "{}", 2);
+
+    int fd = cgi.GetMISO();
+    char buf[1024];
+    int n;
+
+    while ((n = read(fd, buf, sizeof(buf))) > 0)
+    {
+        write(1, buf, n);
+    }
+
+    return 0;
 
     if (argc >= 3)
     {
@@ -64,8 +106,6 @@ int main(int argc, char *argv[])
     if (!webserv.Bind())
         return 1;
 
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGTERM, handler_stub);
     webserv.Run();
     return 0;
 }
