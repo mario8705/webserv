@@ -4,75 +4,47 @@
 
 #ifndef WEBSERV_CGIMANAGER_HPP
 #define WEBSERV_CGIMANAGER_HPP
-
-#include <iostream>
 #include <unistd.h>
+#include <iostream>
 #include <map>
+#include <vector>
 
-#define CGI_PATH "cgi-bin/"
-#define PHP_CMD "/bin/php"
-#define BASH_CMD "/bin/bash"
-
-class CgiManager {
-
-    //const std::string knownCgi[3] = {"python-cgi.py", "php-cgi.php", "cpp-cgi"};
-    int cgiFdIn, cgiFdOut;
-    int cgiPid;
-    std::map<std::string, std::string> serVarMap;
-
-
+class CgiManager
+{
 public:
+    typedef std::map<std::string, std::string> tEnvMap;
 
-	CgiManager();
-	CgiManager(std::string pathToCgi, std::map<std::string, std::string> &ServerVariablesMap);
-	CgiManager(const CgiManager &copy);
+	CgiManager(const std::string &pathToCgi, const tEnvMap &envMap);
 	~CgiManager();
-	CgiManager &operator=(const CgiManager &toAssign);
-    int* execute(const std::string &cgiPath);
 
-	std::vector<std::string> convertEnvMap();
-	int getCgiFdIn() const;
-	int getCgiFdOut() const;
-	int getCgiPid() const;
+    pid_t SpawnSubProcess();
+
+	int GetMISO() const;
+    int GetMOSI() const;
 
     class CgiException: public std::exception
     {
-
-        virtual const char *what() const throw() = 0;
-
     public:
-        class ForkException: public std::exception
-        {
-        public:
-            virtual const char *what() const throw();
-        };
-        class PipeException: public std::exception
-        {
-        public:
-            virtual const char *what() const throw();
-        };
-        class ExecException: public std::exception
-        {
-        public:
-            virtual const char *what() const throw();
-        };
-        class Dup2Exception: public std::exception
-        {
-        public:
-            virtual const char *what() const throw();
-        };
-        class OpenException: public std::exception
-        {
-        public:
-            virtual const char *what() const throw();
-        };
-        class BadFormatException: public std::exception
-        {
-        public:
-            virtual const char *what() const throw();
-        };
+        explicit CgiException(const char *msg) throw();
+        ~CgiException() throw();
 
+        virtual const char *what() const throw();
+
+    private:
+        const char *m_message;
     };
+
+private:
+    std::string m_path;
+    std::vector<std::string> m_envList;
+    int m_miso;
+    int m_mosi;
+
+    CgiManager(const CgiManager &copy);
+    CgiManager &operator=(const CgiManager &toAssign);
+
+    static int SpawnSubProcess(const std::string &path, const std::vector<std::string> &args, const std::vector<std::string> &envs);
+    static std::vector<std::string> SerializeEnvMap(const tEnvMap &envMap);
 };
 
 
