@@ -3,9 +3,6 @@
 //
 
 #include "FileRequestHandler.h"
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include "../IO/BufferEvent.h"
 #include "Response.h"
 #include "HttpProtocolCodec.h"
@@ -18,8 +15,6 @@ FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response
     m_event->Enable(kEvent_Read);
     m_event->GetInputBuffer()->SetReadHighWatermark(65536);
 
-    /* TODO let the request handler select the appropriate mime type */
-    response->AddHeader("Content-Type", "text/html");
     response->SetContentLength(length);
     response->SetChunked(false);
 }
@@ -48,15 +43,6 @@ void FileRequestHandler::HandleRead(DataBuffer *buffer) {
 
 void FileRequestHandler::HandleWrite(DataBuffer *buffer) {
 
-}
-
-FileRequestHandler *FileRequestHandler::Create(IEventLoop *eventLoop, Response *response, int fd) {
-    struct stat st;
-
-    if (fstat(fd, &st) < 0) {
-        return NULL;
-    }
-    return new FileRequestHandler(eventLoop, response, fd, st.st_size);
 }
 
 void FileRequestHandler::OnOutputDrained() {

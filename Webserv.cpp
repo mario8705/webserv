@@ -22,8 +22,11 @@
 #include <iostream>
 #include "MimeDatabase.h"
 
+Webserv *Webserv::s_instance = NULL;
+
 Webserv::Webserv()
 {
+    s_instance = this;
     m_eventLoop = new SelectEventLoop;
     m_running = 0;
     m_mimeDatabase = new MimeDatabase("text/plain");
@@ -33,6 +36,7 @@ Webserv::~Webserv()
 {
     tVirtualHostList::const_iterator it;
 
+    s_instance = NULL;
     for (it = m_virtualHosts.begin(); it != m_virtualHosts.end(); ++it)
     {
         delete *it;
@@ -46,6 +50,16 @@ Webserv::~Webserv()
     BufferChain::ReleasePool();
 }
 
+MimeDatabase *Webserv::GetMimeDatabase() const
+{
+    return m_mimeDatabase;
+}
+
+Webserv *Webserv::GetInstance()
+{
+    return s_instance;
+}
+
 bool Webserv::Bind()
 {
     tVirtualHostList::const_iterator it;
@@ -53,17 +67,17 @@ bool Webserv::Bind()
     VirtualHost *virtualHost;
     ServerHost *serverHost;
 
-    for (it = m_virtualHosts.cbegin(); it != m_virtualHosts.cend(); ++it)
+    for (it = m_virtualHosts.begin(); it != m_virtualHosts.end(); ++it)
     {
         virtualHost = *it;
         const std::vector<NetworkAddress4> &bindAddresses = virtualHost->GetBindAddresses();
 
-        for (addrIt = bindAddresses.cbegin(); addrIt != bindAddresses.cend(); ++addrIt)
+        for (addrIt = bindAddresses.begin(); addrIt != bindAddresses.end(); ++addrIt)
         {
             serverHost = GetServerHostByAddr(*addrIt);
             if (!serverHost)
             {
-                serverHost = new ServerHost(m_eventLoop, *addrIt);
+                serverHost = new ServerHost(this, *addrIt);
                 m_hosts.push_back(serverHost);
 
                 if (!serverHost->Bind()) {
@@ -98,7 +112,7 @@ ServerHost *Webserv::GetServerHostByAddr(const NetworkAddress4 &addr) const
     tHostList::const_iterator it;
     ServerHost *serverHost;
 
-    for (it = m_hosts.cbegin(); it != m_hosts.cend(); ++it)
+    for (it = m_hosts.begin(); it != m_hosts.end(); ++it)
     {
         serverHost = *it;
 
@@ -119,6 +133,10 @@ void Webserv::Stop()
     m_running = 0;
 }
 
+IEventLoop *Webserv::GetEventLoop() const
+{
+    return m_eventLoop;
+}
 
 bool Webserv::LoadConfig(const std::string &path)
 {
@@ -200,8 +218,8 @@ struct root_validator
 class ServerLocationBlockConsumer : public PropertyConsumer
 {
 public:
-    ServerLocationBlockConsumer(ConfigProperty *locationBlock, VirtualHost *virtualHost)
-        : PropertyConsumer(locationBlock), m_virtualHost(virtualHost)
+    ServerLocationBlockConsumer(ConfigProperty *locationBlock, VirtualHost *virtualHost, MountPoint *parentRoute)
+        : PropertyConsumer(locationBlock), m_virtualHost(virtualHost), m_parentRoute(parentRoute)
     {
         m_mountPoint = NULL;
     }
@@ -237,16 +255,17 @@ public:
             }
             ++pathIndex;
         }
-        m_mountPoint = new MountPoint(routeMatch, params[pathIndex]);
+        m_mountPoint = new MountPoint(m_virtualHost, routeMatch, params[pathIndex]);
 
         AcceptProperties("root", &ServerLocationBlockConsumer::ParseRootProperty, this, root_validator());
 
-        m_virtualHost->Mount(m_mountPoint);
+        m_parentRoute->AddNestedMount(m_mountPoint);
     }
 
 private:
     VirtualHost *m_virtualHost;
     MountPoint *m_mountPoint;
+    MountPoint *m_parentRoute;
 
     void ParseRootProperty(ConfigProperty *rootProp)
     {
@@ -266,6 +285,8 @@ public:
     {
         AcceptProperties("listen", &ServerBlockConsumer::ParseListenProperty,
                          this, listen_validator());
+        AcceptProperties("root", &ServerBlockConsumer::ParseRootProperty,
+                     this, root_validator());
         AcceptBlocks("location", &ServerBlockConsumer::ParseLocationBlock,
                      this);
     }
@@ -277,9 +298,14 @@ private:
         m_virtualHost->AddListenAddress(NetworkAddress4(0, 8080));
     }
 
+    void ParseRootProperty(ConfigProperty *configProperty)
+    {
+        m_virtualHost->GetRootMountPoint()->SetRoot(configProperty->getParams()[1]);
+    }
+
     void ParseLocationBlock(ConfigProperty *locationBlock)
     {
-        ServerLocationBlockConsumer locationConsumer(locationBlock, m_virtualHost);
+        ServerLocationBlockConsumer locationConsumer(locationBlock, m_virtualHost, m_virtualHost->GetRootMountPoint());
 
         locationConsumer.ConsumeAll();
     }

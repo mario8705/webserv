@@ -9,14 +9,12 @@
 class HttpException
 {
 public:
-    HttpException(int status);
-    ~HttpException();
+    explicit HttpException(int status) throw();
+    ~HttpException() throw();
 
     int GetStatus() const;
-    std::string GetStatusMessage() const;
 
     int m_status;
-    std::string m_message;
 };
 
 

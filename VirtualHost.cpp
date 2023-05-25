@@ -4,13 +4,17 @@
 
 #include "VirtualHost.h"
 #include "ServerHost.h"
+#include "Http/HttpException.h"
+#include "MountPoint.h"
 
 VirtualHost::VirtualHost()
 {
+    m_rootMountPoint = new MountPoint(this, kRouteMatch_StartsWith, "/");
 }
 
 VirtualHost::~VirtualHost()
 {
+    delete m_rootMountPoint;
 }
 
 void VirtualHost::AddListenAddress(const NetworkAddress4 &addr)
@@ -29,28 +33,25 @@ void VirtualHost::AddListenAddress(const NetworkAddress4 &addr)
 
 void VirtualHost::HandleRequest(Request *request, Response *response)
 {
-    URL url(request->GetRawPath());
-    MountPoint *mountPoint;
-    size_t i;
-
-    for (i = 0; i < m_mountPoints.size(); ++i)
-    {
-        mountPoint = m_mountPoints[i];
-
-        if (mountPoint->Matches(request->GetRawPath()))
-        {
-            printf("Found a match : %p\n", mountPoint);
-            break ;
-        }
-    }
-    if (m_mountPoints.size() == i)
-    {
-        printf("404 or default route for %s\n", request->GetRawPath().c_str());
-    }
-    response->SendFile(url.GetAbsolutePath("./htdocs"));
+    DispatchRequest(m_rootMountPoint, request, response);
 }
 
 const VirtualHost::tServerNameList &VirtualHost::GetServerNames() const
 {
     return m_serverNames;
+}
+
+void VirtualHost::DispatchRequest(MountPoint *mountPoint, Request *request, Response *response)
+{
+    try
+    {
+        mountPoint->HandleRequest(request, response);
+    }
+    catch (HttpException &e)
+    {
+        if (!mountPoint->HandleException(request, response, &e))
+        {
+            /* TODO unhandling exception */
+        }
+    }
 }

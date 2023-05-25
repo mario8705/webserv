@@ -19,7 +19,6 @@ enum HttpTransferEncoding
     kTransferEncoding_Stream,
 };
 
-
 class Response
 {
 public:
@@ -42,7 +41,8 @@ public:
     void SetAsyncHandler(IAsyncRequestHandler *asyncHandler);
     IAsyncRequestHandler *GetAsyncHandler() const;
 
-    void SendFile(const std::string &path);
+    bool SendFile(const std::string &path);
+    bool SendFile(const std::string &path, size_t length);
 
     HttpProtocolCodec *GetHttpCodec() const;
 
@@ -52,8 +52,10 @@ public:
     void SetChunked(bool chunked);
     bool IsChunked() const;
 
-    virtual int Write(const void *data, size_t n) = 0;
-    virtual void End() = 0;
+    int Write(const std::string &str);
+    int Write(const void *data, size_t n);
+
+    DataBuffer *GetBodyBuffer() const;
 
 protected:
     Response();
@@ -64,6 +66,7 @@ protected:
     std::string m_message;
     tHttpHeadersMap m_headers;
     IAsyncRequestHandler *m_asyncHandler;
+    DataBuffer *m_body;
     size_t m_contentLength;
     bool m_chunked;
 };
