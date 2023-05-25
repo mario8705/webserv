@@ -70,13 +70,18 @@ private:
     int m_fd;
 };
 
+static void cleanFds(int fds[2])
+{
+    close(fds[FD_READ]), close(fds[FD_WRITE]);
+}
+
 /**
  * Si le CGI s'execute correctement, sa sortie standard est envoyee dans la string CgiManager->cgiResponse.
  * @param cgiPath = le Cgi doit se finir par .sh ou .php
  * @throw CgiException::OpenException, CgiException::Dup2Exception, CgiException::ExecException
  * @return A malloc'd int: cgi's PID, pipe_webserv_to_cgi, pipe_cgi_to_webserv
  */
-int *CgiManager::execute(const std::string &cgiPath) {
+void CgiManager::execute(const std::string &cgiPath) {
 	int fds_in[2], fds_out[2];
     AutoCloseFileDescriptor cgiFdManaged;
     int cgiFd = open(cgiPath.c_str(), O_RDWR);
@@ -84,41 +89,60 @@ int *CgiManager::execute(const std::string &cgiPath) {
         throw CgiException::OpenException();
     cgiFdManaged.Replace(cgiFd);
 
-    if (pipe(fds_out) < 0)
+    if (pipe(fds_out) < 0 || pipe(fds_in) < 0)
+    {
+        close(fds_in[FD_READ]), close(fds_in[FD_WRITE]);
+        close(fds_out[FD_READ]), close(fds_out[FD_WRITE]);
         throw CgiException::PipeException();
+    }
 
     int pid = fork();
     if (pid == -1)
         throw CgiException::ForkException();
     else if (pid == 0)
     {
-        close(fds_out[0]);
+        if (dup2(fds_in[FD_READ], fds_out[FD_READ]) < 0)
+        {
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
+        close(fds_in[FD_READ]);
+        close(fds_out[FD_WRITE]);
 
-        if (dup2(cgiFd, STDIN_FILENO) == -1)
-            throw CgiException::Dup2Exception();
+        if (dup2(cgiFd, fds_in[FD_WRITE]) == -1)
+        {
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
         close(cgiFd);
 
-        if (dup2(fds_out[1], STDOUT_FILENO) == -1)
-            throw CgiException::Dup2Exception();
-        close(fds_out[1]);
+        if (dup2(fds_in[FD_WRITE], fds_out[FD_READ]) == -1)
+        {
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
+        close(fds_in[FD_WRITE]);
 
         std::vector<std::string> env = convertEnvMap();
         std::vector<std::string> args;
         args.push_back(cgiPath);
 
         executeProcess(cgiPath, args, env);
-        throw CgiException::ExecException();
+        {
+            std::cerr << "CGI failed to execute" << std::endl;
+            cleanFds(fds_in), cleanFds(fds_out);
+            exit(EBADFD);
+        }
     }
     else
     {
-        //close(fds_out[1]);
+        close(fds_in[FD_READ]);
+        close(fds_out[FD_WRITE]);
         close(cgiFd);
     }
-    //while (waitpid(pid, NULL, 0) != -1);
     cgiPid = pid;
-    cgiFdIn = fds_out[1];
-    cgiFdOut = fds_out[0];
-    return new int[3] {cgiPid,cgiFdIn, cgiFdOut};
+    cgiFdIn = fds_in[FD_WRITE];
+    cgiFdOut = fds_out[FD_READ];
 }
 
 std::vector<std::string> CgiManager::convertEnvMap() {
