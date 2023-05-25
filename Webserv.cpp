@@ -67,12 +67,12 @@ bool Webserv::Bind()
     VirtualHost *virtualHost;
     ServerHost *serverHost;
 
-    for (it = m_virtualHosts.cbegin(); it != m_virtualHosts.cend(); ++it)
+    for (it = m_virtualHosts.begin(); it != m_virtualHosts.end(); ++it)
     {
         virtualHost = *it;
         const std::vector<NetworkAddress4> &bindAddresses = virtualHost->GetBindAddresses();
 
-        for (addrIt = bindAddresses.cbegin(); addrIt != bindAddresses.cend(); ++addrIt)
+        for (addrIt = bindAddresses.begin(); addrIt != bindAddresses.end(); ++addrIt)
         {
             serverHost = GetServerHostByAddr(*addrIt);
             if (!serverHost)
@@ -112,7 +112,7 @@ ServerHost *Webserv::GetServerHostByAddr(const NetworkAddress4 &addr) const
     tHostList::const_iterator it;
     ServerHost *serverHost;
 
-    for (it = m_hosts.cbegin(); it != m_hosts.cend(); ++it)
+    for (it = m_hosts.begin(); it != m_hosts.end(); ++it)
     {
         serverHost = *it;
 
