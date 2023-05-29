@@ -5,6 +5,10 @@
 #include "URL.h"
 #include <iostream>
 
+URL::URL()
+{
+}
+
 URL::URL(std::string path)
     : m_path(path)
 {
@@ -105,4 +109,9 @@ std::string URL::Encode(const std::string &s)
         res.insert(res.end(), static_cast<char>(ch));
     }
     return res;
+}
+
+URL::URL(const std::string &protocol, const std::string &host, const std::string &path, const std::string &query)
+    : m_protocol(protocol), m_host(host), m_path(path), m_query(query)
+{
 }

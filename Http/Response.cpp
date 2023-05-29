@@ -13,6 +13,7 @@
 #include "FileRequestHandler.h"
 #include "../Webserv.h"
 #include "../MimeDatabase.h"
+#include "Request.h"
 
 Response::~Response()
 {
@@ -149,12 +150,23 @@ Response::Response(HttpClientHandler *clientHandler)
 #include "../Cgi/CgiManager.hpp"
 #include "CGIRequestHandler.h"
 
-bool Response::CgiPass(const std::string &path) {
+bool Response::CgiPass(Request *req, const std::string &scriptFilename, const std::string &path) {
     CgiManager *manager;
     CgiManager::tEnvMap m;
+    tHttpHeadersMap::const_iterator it;
+    size_t i;
+    URL url = req->GetUrl();
 
     m["REDIRECT_STATUS"] = "200";
-    m["SCRIPT_FILENAME"] = "htdocs/phpinfo.php";
+    m["SCRIPT_FILENAME"] = scriptFilename;
+    m["REQUEST_URI"] = req->GetRawPath();
+    m["QUERY_STRING"] = url.m_query; //url.GetQueryString();
+    m["REQUEST_METHOD"] = "GET";
+    m["DOCUMENT_ROOT"] = "./htdocs/wordpress";
+    m["DOCUMENT_URI"] = "http://localhost:8080" + req->GetRawPath();
+    m["SCRIPT_NAME"] = "/index.php";
+
+    req->EncodeCGIHeaders(m);
 
     manager = new CgiManager(path, m);
     if (manager->SpawnSubProcess() < 0)

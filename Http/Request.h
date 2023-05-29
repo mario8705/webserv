@@ -8,6 +8,7 @@
 #include <map>
 #include "HttpMethod.h"
 #include "HttpVersion.h"
+#include "URL.h"
 
 class HttpProtocolCodec;
 class HttpClientHandler;
@@ -24,11 +25,15 @@ public:
     HttpMethod GetMethod() const;
     std::string GetRawPath() const;
 
+    URL GetUrl() const;
+
     HttpVersion GetProtocolVersion() const;
 
     const tHttpHeaders &GetHeaders() const;
 
     HttpProtocolCodec *GetHttpCodec() const;
+
+    void EncodeCGIHeaders(std::map<std::string, std::string> &cgiEnv);
 
 protected:
     Request(HttpClientHandler *clientHandler, tHttpHeaders &headers);
@@ -39,6 +44,7 @@ protected:
 
 private:
     HttpClientHandler *m_clientHandler;
+    URL m_url;
     HttpMethod m_method;
     HttpVersion m_httpVersion;
     std::string m_rawPath;

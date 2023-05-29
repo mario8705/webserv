@@ -12,6 +12,7 @@ class HttpStatusCode;
 class IAsyncRequestHandler;
 class HttpProtocolCodec;
 class HttpClientHandler;
+class Request;
 
 enum HttpTransferEncoding
 {
@@ -46,7 +47,7 @@ public:
     bool SendFile(const std::string &path);
     bool SendFile(const std::string &path, size_t length);
 
-    bool CgiPass(const std::string &path);
+    bool CgiPass(Request *req, const std::string &scriptFilename, const std::string &path);
 
     HttpProtocolCodec *GetHttpCodec() const;
 

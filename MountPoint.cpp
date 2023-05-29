@@ -12,6 +12,7 @@
 #include "Webserv.h"
 #include "Http/CGIRequestHandler.h"
 #include "Http/HttpProtocolCodec.h"
+#include "string_utils.hpp"
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
@@ -55,7 +56,7 @@ void MountPoint::HandleRequest(Request *request, Response *response)
 {
     std::vector<MountPoint *>::iterator it;
     MountPoint *mountPoint;
-    URL url(request->GetRawPath());
+    URL url = request->GetUrl();
     std::string path;
     struct stat st;
 
@@ -64,12 +65,9 @@ void MountPoint::HandleRequest(Request *request, Response *response)
 
     PopulateCgiParams(request, params);
 
-    for (params_it = params.begin(); params_it != params.end(); ++params_it)
-    {
-        printf("CGI PARAM %s : %s\n", params_it->first.c_str(), params_it->second.c_str());
-    }
-
     path = LocateFile(url);
+    printf("File exists %s\n", path.c_str());
+
     if (stat(path.c_str(), &st) >= 0)
     {
         if (S_ISDIR(st.st_mode))
@@ -93,10 +91,14 @@ void MountPoint::HandleRequest(Request *request, Response *response)
         }
         else
         {
-            if (response->CgiPass("/usr/local/bin/php-cgi"/* path */))
-                return ;
-            //if (response->SendFile(path, st.st_size))
-              //  return ;
+            if (utils::ends_with(path, ".php")) {
+                if (response->CgiPass(request, url.GetAbsolutePath(m_root), "/usr/local/bin/php-cgi"/* path */))
+                    return;
+            }
+            else {
+                if (response->SendFile(path, st.st_size))
+                    return;
+            }
         }
     }
     for (it = m_nestedMounts.begin(); it != m_nestedMounts.end(); ++it)
@@ -108,6 +110,7 @@ void MountPoint::HandleRequest(Request *request, Response *response)
             return mountPoint->HandleRequest(request, response);
         }
     }
+    /* TODO Exceptions aren't working anymore */
     throw HttpException(404);
 }
 

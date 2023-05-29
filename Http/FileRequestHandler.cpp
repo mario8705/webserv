@@ -7,6 +7,7 @@
 #include "Response.h"
 #include "HttpProtocolCodec.h"
 #include "../IO/DataBuffer.h"
+#include "HttpStatusCode.h"
 
 FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response, int fd, size_t length)
         : m_codec(response->GetHttpCodec()), m_length(length)
@@ -17,7 +18,6 @@ FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response
 
     response->SetContentLength(length);
     response->SetChunked(false);
-    m_codec->WriteResponseHeader();
 }
 
 FileRequestHandler::~FileRequestHandler()

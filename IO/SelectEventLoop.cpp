@@ -69,10 +69,8 @@ bool SelectEventLoop::LoopOnce()
             FD_SET(fd, &wrset);
     }
     n = select(nfds + 1, &rdset, &wrset, NULL, NULL);
-    std::cout << "select() watched " << m_eventMap.size() << " file descriptors" << std::endl;
     if (n < 0)
     {
-        std::cerr << "select() returned an error: " << strerror(errno) << std::endl;
         return true;
     }
     for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
