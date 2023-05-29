@@ -122,6 +122,10 @@ int Response::Write(const std::string &str)
 
 int Response::Write(const void *data, size_t n)
 {
+    if (m_chunked)
+    {
+        printf("Is Chunked\n");
+    }
     return m_body->Write(data, n);
 }
 
@@ -140,4 +144,28 @@ Response::Response(HttpClientHandler *clientHandler)
     m_chunked = false;
     m_body = new DataBuffer;
     SetStatus(HttpStatusCode::Ok);
+}
+
+#include "../Cgi/CgiManager.hpp"
+#include "CGIRequestHandler.h"
+
+bool Response::CgiPass(const std::string &path) {
+    CgiManager *manager;
+    CgiManager::tEnvMap m;
+
+    m["REDIRECT_STATUS"] = "200";
+    m["SCRIPT_FILENAME"] = "htdocs/phpinfo.php";
+
+    manager = new CgiManager(path, m);
+    if (manager->SpawnSubProcess() < 0)
+    {
+        delete manager;
+        return false;
+    }
+    SetAsyncHandler(new CGIRequestHandler(
+            m_clientHandler->GetEventLoop(),
+            this,
+            manager
+            ));
+    return true;
 }

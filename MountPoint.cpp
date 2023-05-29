@@ -10,6 +10,8 @@
 #include "Http/HttpException.h"
 #include "VirtualHost.h"
 #include "Webserv.h"
+#include "Http/CGIRequestHandler.h"
+#include "Http/HttpProtocolCodec.h"
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
@@ -91,8 +93,10 @@ void MountPoint::HandleRequest(Request *request, Response *response)
         }
         else
         {
-            if (response->SendFile(path, st.st_size))
+            if (response->CgiPass("/usr/local/bin/php-cgi"/* path */))
                 return ;
+            //if (response->SendFile(path, st.st_size))
+              //  return ;
         }
     }
     for (it = m_nestedMounts.begin(); it != m_nestedMounts.end(); ++it)

@@ -17,6 +17,7 @@ FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response
 
     response->SetContentLength(length);
     response->SetChunked(false);
+    m_codec->WriteResponseHeader();
 }
 
 FileRequestHandler::~FileRequestHandler()
@@ -38,7 +39,6 @@ void FileRequestHandler::HandleEvent(EventType type) {
 void FileRequestHandler::HandleRead(DataBuffer *buffer) {
     if (m_codec->GetOutputBuffer()->GetLength() < 65536)
         m_codec->Write(m_event->GetInputBuffer());
- //   printf("Data: %zu\n", m_event->GetInputBuffer()->GetLength());
 }
 
 void FileRequestHandler::HandleWrite(DataBuffer *buffer) {

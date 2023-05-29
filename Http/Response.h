@@ -46,6 +46,8 @@ public:
     bool SendFile(const std::string &path);
     bool SendFile(const std::string &path, size_t length);
 
+    bool CgiPass(const std::string &path);
+
     HttpProtocolCodec *GetHttpCodec() const;
 
     void SetContentLength(size_t length);

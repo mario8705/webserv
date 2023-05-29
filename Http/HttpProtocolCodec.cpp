@@ -19,6 +19,7 @@ HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *inp
 {
     m_requestHeaderParsed = false;
     m_asyncHandler = NULL;
+    m_headersSent = false;
     m_pendingFinalizeResponse = false;
 
     m_methods.insert(std::make_pair("GET", kHttpMethod_Get));
@@ -85,15 +86,6 @@ void HttpProtocolCodec::OnOutputDrained()
     }
     if (m_pendingFinalizeResponse)
         FinalizeResponse();
-}
-
-void HttpProtocolCodec::EncodeResponse(Response *response)
-{
-    WriteResponseHeader(response->GetStatusCode(), response->GetStatusMessage());
-    WriteHeaders(response->GetHeaders());
-    m_outputBuffer->PutString("\r\n");
-
-   // out->AddBuffer(response->GetOutputBuffer());
 }
 
 void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
@@ -168,23 +160,21 @@ void HttpProtocolCodec::ParseHeader(const std::string &line)
     m_headers.insert(std::make_pair(key, value));
 }
 
-void HttpProtocolCodec::WriteResponseHeader(int status, const std::string &statusMessage)
+void HttpProtocolCodec::WriteResponseHeader()
 {
     std::stringstream ss;
-
-    ss << m_httpVersion << " " << status << " " << statusMessage << "\r\n";
-    m_outputBuffer->PutString(ss.str());
-}
-
-void HttpProtocolCodec::WriteHeaders(const tHeaderMap &headers)
-{
     tHeaderMap::const_iterator it;
-    std::stringstream ss;
 
-    for (it = headers.begin(); it != headers.end(); ++it)
+    if (m_headersSent)
+        return ;
+    m_headersSent = true;
+
+    ss << m_httpVersion << " " << m_responseStatus << " " << m_responseMessage << "\r\n";
+    for (it = m_responseHeaders.begin(); it != m_responseHeaders.end(); ++it)
     {
         ss << it->first << ": " << it->second << "\r\n";
     }
+    ss << "\r\n";
     m_outputBuffer->PutString(ss.str());
 }
 
@@ -218,28 +208,28 @@ void HttpProtocolCodec::DispatchRequest()
         printf("Unexpected error\n");
     }
 
-    headers.swap(response.GetHeaders());
+    m_responseHeaders.swap(response.GetHeaders());
 
     if (response.IsChunked())
     {
-        headers["Transfer-Encoding"] = "chunked";
+        m_responseHeaders["Transfer-Encoding"] = "chunked";
     }
     else
     {
-        headers["Content-Length"] = utils::to_string(response.GetContentLength());
+        m_responseHeaders["Content-Length"] = utils::to_string(response.GetContentLength());
     }
 
-    WriteResponseHeader(response.GetStatusCode(), response.GetStatusMessage());
-    WriteHeaders(headers);
-    m_outputBuffer->PutString("\r\n");
+    m_responseStatus = response.GetStatusCode();
+    m_responseMessage = response.GetStatusMessage();
 
     m_asyncHandler = response.GetAsyncHandler();
-    printf("Wesh\n");
+    m_chunked = response.IsChunked();
 
     body = response.GetBodyBuffer();
     if (body->GetLength() > 0)
     {
-        m_outputBuffer->AddBuffer(body);
+        WriteResponseHeader();
+        Write(body);
         FinalizeResponse();
     }
 }
@@ -247,6 +237,18 @@ void HttpProtocolCodec::DispatchRequest()
 void HttpProtocolCodec::FinalizeResponse()
 {
     tHeaderMap::const_iterator it;
+
+    if (!m_pendingFinalizeResponse)
+    {
+        if (!m_headersSent)
+            WriteResponseHeader();
+
+        if (m_chunked)
+        {
+            WriteChunkHeader(0);
+            m_outputBuffer->PutString("\r\n");
+        }
+    }
 
     if (m_outputBuffer->GetLength() > 0)
     {
@@ -276,6 +278,7 @@ void HttpProtocolCodec::FinalizeResponse()
     m_headers.clear();
     m_requestHeaderParsed = false;
     m_pendingFinalizeResponse = false;
+    m_headersSent = false;
 
     /* Re-enable reads to receive the next request */
     m_bufferEvent->Enable(kEvent_Read);
@@ -283,12 +286,33 @@ void HttpProtocolCodec::FinalizeResponse()
 
 void HttpProtocolCodec::Write(const void *data, size_t n)
 {
+    if (!m_headersSent)
+        WriteResponseHeader();
     m_outputBuffer->Write(data, n);
 }
 
 void HttpProtocolCodec::Write(DataBuffer *buffer)
 {
+    if (!m_headersSent)
+        WriteResponseHeader();
+
+    if (m_chunked)
+    {
+        WriteChunkHeader(buffer->GetLength());
+    }
     m_outputBuffer->AddBuffer(buffer);
+    if (m_chunked)
+    {
+        m_outputBuffer->PutString("\r\n");
+    }
+}
+
+void HttpProtocolCodec::WriteChunkHeader(size_t length)
+{
+    std::stringstream ss;
+
+    ss << std::hex << length << "\r\n";
+    m_outputBuffer->PutString(ss.str());
 }
 
 DataBuffer *HttpProtocolCodec::GetInputBuffer() const {
@@ -297,4 +321,9 @@ DataBuffer *HttpProtocolCodec::GetInputBuffer() const {
 
 DataBuffer *HttpProtocolCodec::GetOutputBuffer() const {
     return m_outputBuffer;
+}
+
+void HttpProtocolCodec::AddHeader(const std::string &name, const std::string &value)
+{
+    m_responseHeaders[name] = value;
 }

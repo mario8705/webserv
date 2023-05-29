@@ -21,16 +21,16 @@ CgiManager::CgiManager(const CgiManager &copy)
 
 CgiManager::~CgiManager()
 {
-    if (m_mosi >= 0)
-        close(m_mosi);
-    if (m_miso >= 0)
-        close(m_miso);
 }
 
 CgiManager &CgiManager::operator=(const CgiManager &toAssign) {
     return *this;
 }
 
+/**
+ * Once executed you have to close the pipes yourself (the dtor doesn't do it)
+ * @return
+ */
 pid_t CgiManager::SpawnSubProcess()
 {
     std::vector<std::string> args;
@@ -65,6 +65,8 @@ pid_t CgiManager::SpawnSubProcess()
             exit(1);
         if (dup2(mosi[0], 0) < 0)
             exit(1);
+        close(miso[1]);
+        close(mosi[0]);
         SpawnSubProcess(m_path.c_str(), args, m_envList);
         exit(1);
     }
