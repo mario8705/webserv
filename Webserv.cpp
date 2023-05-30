@@ -307,8 +307,9 @@ public:
 private:
     void ParseListenProperty(ConfigProperty *configProperty)
     {
-        /* TODO parse network address */
-        m_virtualHost->AddListenAddress(NetworkAddress4(0, 8080));
+        /* TODO Alavaud must check is this is ok */
+        int port = std::stoi(configProperty->getParams()[1]);
+        m_virtualHost->AddListenAddress(NetworkAddress4(0, port));
     }
 
     void ParseRootProperty(ConfigProperty *configProperty)
