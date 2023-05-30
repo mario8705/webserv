@@ -44,22 +44,32 @@ void HttpProtocolCodec::ProcessDataInput()
     dispatchRequest = false;
     while (m_inputBuffer->Readln(line))
     {
-        if (!m_requestHeaderParsed)
-        {
-            ParseRequestHeader(line);
-            m_requestHeaderParsed = true;
+        try {
+            if (!m_requestHeaderParsed) {
+                ParseRequestHeader(line);
+                m_requestHeaderParsed = true;
 
-            if (HttpVersion::kHttpVersion_1_0 == m_httpVersion)
-            {
-                dispatchRequest = true;
+                if (HttpVersion::kHttpVersion_1_0 == m_httpVersion) {
+                    dispatchRequest = true;
+                }
+            } else {
+                if (line.empty())
+                    dispatchRequest = true;
+                else
+                    ParseHeader(line);
             }
         }
-        else
+        catch (const HttpException &e)
         {
-            if (line.empty())
-                dispatchRequest = true;
-            else
-                ParseHeader(line);
+            m_responseMessage = e.GetStatus().GetStatusMessage();
+            m_responseStatus = e.GetStatus().GetStatusCode();
+            m_httpVersion = HttpVersion(1, 0);
+            m_responseHeaders.clear();
+            m_responseHeaders["Content-Length"] = "0";
+            m_bufferEvent->Enable(kEvent_Write);
+            WriteResponseHeader();
+            m_handler->Disconnect(true);
+            return ;
         }
         if (dispatchRequest)
         {
@@ -101,9 +111,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
     httpVersion = "HTTP/1.0";
     if (methodSep == std::string::npos)
     {
-        printf("Invalid request !!\n");
-        /* TODO invalid request */
-        return ;
+        throw HttpException(HttpStatusCode::BadRequest);
     }
     method = line.substr(0, methodSep);
     if (httpVersionSep != std::string::npos && httpVersionSep != methodSep)
@@ -121,11 +129,12 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
 void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::string &rawPath,
                                          const std::string &httpVersion)
 {
-    if (!m_httpVersion.Parse(httpVersion))
+    if (!m_httpVersion.Parse(httpVersion) || m_httpVersion.GetMajor() > 1)
     {
-        /* TODO printf("Invalid request : Unknown http version\n"); */
-        return ;
+        throw HttpException(HttpStatusCode::BadRequest);
     }
+
+    m_httpVersion = HttpVersion::Min(HttpVersion(1, 1), m_httpVersion);
 
     tHttpMethodsMap::const_iterator methodsIt = m_methods.find(method);
     if (methodsIt == m_methods.end())

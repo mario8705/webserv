@@ -19,6 +19,7 @@ public:
     static HttpStatusCode Ok;
 
     /* 4xx */
+    static HttpStatusCode BadRequest;
     static HttpStatusCode NotFound;
     static HttpStatusCode MethodNotAllowed;
     static HttpStatusCode RequestURITooLong;

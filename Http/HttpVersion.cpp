@@ -55,3 +55,23 @@ std::string HttpVersion::ToString() const
     ss << *this;
     return ss.str();
 }
+
+HttpVersion HttpVersion::Min(const HttpVersion &a, const HttpVersion &b) {
+    int M, m;
+
+    if (a.GetMajor() > b.GetMajor())
+    {
+        return b;
+    }
+    else if (b.GetMajor() > b.GetMajor())
+    {
+        return b;
+    }
+    M = a.GetMajor();
+    if (a.GetMinor() > b.GetMinor())
+        m = b.GetMinor();
+    else
+        m = a.GetMinor();
+    return HttpVersion(M, m);
+
+}
