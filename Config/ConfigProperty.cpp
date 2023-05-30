@@ -71,7 +71,7 @@ ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
         {
             if (stck.size() < 2)
             {
-                /* TODO error */
+                throw std::runtime_error("Bracket unclosed");
             }
             stck.pop();
         }
