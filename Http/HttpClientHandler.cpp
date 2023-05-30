@@ -28,7 +28,6 @@ HttpClientHandler::~HttpClientHandler()
 
 void HttpClientHandler::HandleRead(DataBuffer *buffer)
 {
-    printf("Input %zu\n", buffer->GetLength());
     m_protocolCodec->ProcessDataInput();
 }
 
