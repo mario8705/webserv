@@ -64,6 +64,11 @@ void MountPoint::HandleRequest(Request *request, Response *response)
     std::map<std::string, std::string> params;
     std::map<std::string, std::string>::const_iterator params_it;
 
+    if (request->GetContentLength() > 8388608)
+    {
+        throw HttpException(HttpStatusCode::RequestEntityTooLarge);
+    }
+
     if (request->GetMethod() == kHttpMethod_Invalid)
     {
         throw HttpException(HttpStatusCode::MethodNotAllowed);

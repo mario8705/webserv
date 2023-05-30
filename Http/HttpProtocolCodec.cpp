@@ -69,6 +69,12 @@ void HttpProtocolCodec::ProcessDataInput()
                                     throw HttpException(HttpStatusCode::BadRequest);
                                 }
                             }
+                            m_bufferEvent->Enable(kEvent_Read | kEvent_Write);
+                        }
+                        else
+                        {
+                            /* Disable reading while processing the request */
+                            m_bufferEvent->Enable(kEvent_Write);
                         }
                         dispatchRequest = true;
                     } else
@@ -216,9 +222,6 @@ void HttpProtocolCodec::DispatchRequest()
     request.SetMethod(m_method);
     request.SetRawPath(m_rawPath);
     request.SetProtocolVersion(m_httpVersion);
-
-    /* Disable reading while processing the request */
-    m_bufferEvent->Enable(kEvent_Write);
 
     try {
         m_handler->HandleRequest(&request, &response);

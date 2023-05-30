@@ -120,7 +120,6 @@ public:
     {
         if (out->GetLength() == 0 && m_bytesLeft == 0)
         {
-            printf("Closed the pipe\n");
             delete m_bev;
             m_bev = NULL;
         }

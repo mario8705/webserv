@@ -1,3 +1,9 @@
+<?php
+    if (isset($_FILES) && isset($_FILES['thumbnail'])) {
+        move_uploaded_file($_FILES['thumbnail']['tmp_name'], 'upload.png');
+    }
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -43,5 +49,7 @@
 <?php
     endif;
 ?>
+    <p>Latest upload : </p>
+    <img style="max-width: 100%; height: auto;" src="upload.png" alt="">
 </body>
 </html>

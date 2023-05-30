@@ -13,7 +13,9 @@ HttpClientHandler::HttpClientHandler(ServerHost *host, int fd)
     : m_host(host), m_disconnecting(false)
 {
     m_event = new BufferEvent(host->GetEventLoop(), this, fd);
-    m_event->GetInputBuffer()->SetReadHighWatermark(16384);
+    /* TODO doesn't work lol please fix (later in v2 ahha) */
+    /* m_event->GetInputBuffer()->SetReadHighWatermark(16384); */
+    m_event->GetInputBuffer()->SetReadHighWatermark(16777216);
     m_event->Enable(kEvent_Read);
     m_protocolCodec = new HttpProtocolCodec(this, m_event->GetInputBuffer(), m_event->GetOutputBuffer());
 }
@@ -26,6 +28,7 @@ HttpClientHandler::~HttpClientHandler()
 
 void HttpClientHandler::HandleRead(DataBuffer *buffer)
 {
+    printf("Input %zu\n", buffer->GetLength());
     m_protocolCodec->ProcessDataInput();
 }
 
