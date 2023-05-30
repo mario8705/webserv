@@ -28,5 +28,7 @@ HttpStatusCode HttpStatusCode::NotFound(404, "Not Found");
 
 HttpStatusCode HttpStatusCode::BadRequest(400, "Bad Request");
 HttpStatusCode HttpStatusCode::MethodNotAllowed(405, "Method Not Allowed");
+HttpStatusCode HttpStatusCode::LengthRequired(411, "Length Required");
+HttpStatusCode HttpStatusCode::RequestEntityTooLarge(413, "Request Entity Too Large");
 HttpStatusCode HttpStatusCode::RequestURITooLong(414, "Request-URI Too Long");
 

@@ -41,50 +41,70 @@ void HttpProtocolCodec::ProcessDataInput()
     std::string line;
     bool dispatchRequest;
 
-    dispatchRequest = false;
-    while (m_inputBuffer->Readln(line))
-    {
-        try {
-            if (!m_requestHeaderParsed) {
-                ParseRequestHeader(line);
-                m_requestHeaderParsed = true;
+    if (!m_asyncHandler) {
+        dispatchRequest = false;
+        while (m_inputBuffer->Readln(line)) {
+            try {
+                if (!m_requestHeaderParsed) {
+                    ParseRequestHeader(line);
+                    m_requestHeaderParsed = true;
 
-                if (HttpVersion::kHttpVersion_1_0 == m_httpVersion) {
-                    dispatchRequest = true;
+                    if (HttpVersion::kHttpVersion_1_0 == m_httpVersion) {
+                        dispatchRequest = true;
+                    }
+                } else {
+                    if (line.empty()) {
+                        if (m_method == kHttpMethod_Post ||
+                            m_method == kHttpMethod_Patch ||
+                            m_method == kHttpMethod_Put) {
+                            if (m_headers.find("Content-Length") == m_headers.end()) {
+                                throw HttpException(HttpStatusCode::LengthRequired);
+                            }
+
+                            std::string contentLength = m_headers["Content-Length"];
+                            size_t i;
+
+                            for (i = 0; i < contentLength.size(); ++i) {
+                                if (!std::isdigit(contentLength[i]) || i > 10) {
+                                    throw HttpException(HttpStatusCode::BadRequest);
+                                }
+                            }
+                        }
+                        dispatchRequest = true;
+                    } else
+                        ParseHeader(line);
                 }
-            } else {
-                if (line.empty())
-                    dispatchRequest = true;
-                else
-                    ParseHeader(line);
+            }
+            catch (const HttpException &e) {
+                m_responseMessage = e.GetStatus().GetStatusMessage();
+                m_responseStatus = e.GetStatus().GetStatusCode();
+                m_httpVersion = HttpVersion(1, 0);
+                m_responseHeaders.clear();
+                m_responseHeaders["Content-Length"] = "0";
+                m_responseHeaders["Content-Type"] = "text/html; charset=utf-8";
+                m_bufferEvent->Enable(kEvent_Write);
+                WriteResponseHeader();
+                m_handler->Disconnect(true);
+                return;
+            }
+            if (dispatchRequest) {
+                dispatchRequest = false;
+                DispatchRequest();
+                if (m_asyncHandler)
+                    break ;
             }
         }
-        catch (const HttpException &e)
-        {
-            m_responseMessage = e.GetStatus().GetStatusMessage();
-            m_responseStatus = e.GetStatus().GetStatusCode();
-            m_httpVersion = HttpVersion(1, 0);
-            m_responseHeaders.clear();
-            m_responseHeaders["Content-Length"] = "0";
-            m_bufferEvent->Enable(kEvent_Write);
-            WriteResponseHeader();
-            m_handler->Disconnect(true);
-            return ;
-        }
-        if (dispatchRequest)
-        {
-            dispatchRequest = false;
-            DispatchRequest();
-            if (m_asyncHandler)
-                return ;
+        if (m_inputBuffer->GetLength() >= m_inputBuffer->GetReadHighWatermark()) {
+            /* TODO handle veryyyy looong requests */
+            // printf("Buffer full and no line could be read\n");
+            //m_event->GetOutputBuffer()->PutString("Buffer full");
+            // Disconnect(true);
         }
     }
-    if (m_inputBuffer->GetLength() >= m_inputBuffer->GetReadHighWatermark())
+
+    if (m_asyncHandler)
     {
-        /* TODO handle veryyyy looong requests */
-       // printf("Buffer full and no line could be read\n");
-        //m_event->GetOutputBuffer()->PutString("Buffer full");
-       // Disconnect(true);
+        m_asyncHandler->OnDataIncoming(m_inputBuffer);
     }
 }
 

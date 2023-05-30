@@ -33,6 +33,9 @@ public:
 
     HttpProtocolCodec *GetHttpCodec() const;
 
+    size_t GetContentLength() const;
+    std::string GetContentType() const;
+
     void EncodeCGIHeaders(std::map<std::string, std::string> &cgiEnv);
 
 protected:

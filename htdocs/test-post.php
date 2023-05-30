@@ -20,7 +20,7 @@
 ?>
             <tr>
                 <td><?= $key ?></td>
-                <td><?= $value ?></td>
+                <td><?= var_dump($value) ?></td>
             </tr>
 <?php
         endforeach;
@@ -29,9 +29,10 @@
 <?php
     else:
 ?>
-        <form action="test-post.php" method="post">
+        <form action="test-post.php" method="post" enctype="multipart/form-data">
             <input type="text" name="name" placeholder="Name">
             <input type="text" name="city" placeholder="City">
+            <input type="file" name="thumbnail">
             <button type="submit">Submit</button>
         </form>
 <?php

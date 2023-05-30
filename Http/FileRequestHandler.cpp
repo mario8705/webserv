@@ -49,3 +49,7 @@ void FileRequestHandler::OnOutputDrained() {
     if (m_codec->GetOutputBuffer()->GetLength() < 65536)
         m_codec->Write(m_event->GetInputBuffer());
 }
+
+void FileRequestHandler::OnDataIncoming(DataBuffer *)
+{
+}
