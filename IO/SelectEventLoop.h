@@ -7,6 +7,8 @@
 #include "EventLoop.h"
 #include <vector>
 #include <map>
+#include <cerrno>
+#include <cstdio>
 
 class SelectEventLoop : public IEventLoop
 {

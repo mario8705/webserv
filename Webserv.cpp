@@ -20,6 +20,7 @@
 #include "Config/Token.h"
 #include "Config/ConfigProperty.h"
 #include <iostream>
+#include <string>
 #include "MimeDatabase.h"
 
 Webserv *Webserv::s_instance = NULL;
@@ -308,7 +309,7 @@ private:
     void ParseListenProperty(ConfigProperty *configProperty)
     {
         /* TODO Alavaud must check is this is ok */
-        int port = std::stoi(configProperty->getParams()[1]);
+        int port = std::atoi(configProperty->getParams()[1].c_str());
         m_virtualHost->AddListenAddress(NetworkAddress4(0, port));
     }
 

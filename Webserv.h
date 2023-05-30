@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <string>
 #include "Network/NetworkAddress4.h"
 
 class IEventLoop;
