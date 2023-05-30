@@ -14,6 +14,8 @@
 #include "Http/HttpProtocolCodec.h"
 #include "string_utils.hpp"
 #include "Http/HttpStatusCode.h"
+#include <iostream>
+
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
@@ -96,7 +98,7 @@ void MountPoint::HandleRequest(Request *request, Response *response)
         else
         {
             if (utils::ends_with(path, ".php")) {
-                if (response->CgiPass(request, url.GetAbsolutePath(m_root), "/usr/local/bin/php-cgi"/* path */))
+                if (response->CgiPass(request, url.GetAbsolutePath(m_root), "/usr/bin/php-cgi"/* path */ )) //todo: replace path with the True Path in the config file
                     return;
             }
             else {
