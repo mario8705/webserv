@@ -13,15 +13,9 @@
 #include "FileRequestHandler.h"
 #include "../Webserv.h"
 #include "../MimeDatabase.h"
-
-Response::Response()
-{
-    m_asyncHandler = NULL;
-    m_contentLength = 0;
-    m_chunked = false;
-    m_body = new DataBuffer;
-    SetStatus(HttpStatusCode::Ok);
-}
+#include "Request.h"
+#include "../Cgi/CgiManager.hpp"
+#include "CGIRequestHandler.h"
 
 Response::~Response()
 {
@@ -124,11 +118,22 @@ bool Response::IsChunked() const {
     return m_chunked;
 }
 
+/**
+ * @deprecated
+ * @param str
+ * @return
+ */
 int Response::Write(const std::string &str)
 {
     return Write(str.c_str(), str.size());
 }
 
+/**
+ * @deprecated
+ * @param data
+ * @param n
+ * @return
+ */
 int Response::Write(const void *data, size_t n)
 {
     return m_body->Write(data, n);
@@ -137,4 +142,49 @@ int Response::Write(const void *data, size_t n)
 DataBuffer *Response::GetBodyBuffer() const
 {
     return m_body;
+}
+
+Response::Response(HttpClientHandler *clientHandler)
+    : m_clientHandler(clientHandler)
+{
+    m_codec = clientHandler->GetProtocolCodec();
+    m_asyncHandler = NULL;
+    m_contentLength = 0;
+    m_status = 200;
+    m_chunked = false;
+    m_body = new DataBuffer;
+    SetStatus(HttpStatusCode::Ok);
+}
+
+bool Response::CgiPass(Request *req, const std::string &scriptFilename, const std::string &path) {
+    CgiManager *manager;
+    CgiManager::tEnvMap m;
+    tHttpHeadersMap::const_iterator it;
+    size_t i;
+    URL url = req->GetUrl();
+
+    m["REDIRECT_STATUS"] = "200";
+    m["SCRIPT_FILENAME"] = scriptFilename;
+    m["REQUEST_URI"] = url.m_path; /* + query */
+    m["QUERY_STRING"] = url.m_query; //url.GetQueryString();
+    m["DOCUMENT_ROOT"] = "./htdocs/wordpress";
+
+    //m["DOCUMENT_URI"] = "http://localhost:8080" + req->GetRawPath();
+   // m["SCRIPT_NAME"] = "i like trains";
+
+    req->EncodeCGIHeaders(m);
+
+    manager = new CgiManager(path, m);
+    if (manager->SpawnSubProcess() < 0)
+    {
+        delete manager;
+        return false;
+    }
+    SetAsyncHandler(new CGIRequestHandler(
+            m_clientHandler->GetEventLoop(),
+            req,
+            this,
+            manager
+            ));
+    return true;
 }

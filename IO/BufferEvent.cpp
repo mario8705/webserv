@@ -79,7 +79,6 @@ void BufferEvent::Enable(int flags)
 
     if (m_readEnabled && m_inputBuffer->GetLength() > 0)
     {
-        /* TODO add kEvent_Read to pending events */
         /**
          * We need to trigger a read event if there is unread data in
          * the input buffer, otherwise the client might be stuck waiting for a response
@@ -87,6 +86,7 @@ void BufferEvent::Enable(int flags)
          * We avoid that by manually triggered a read event to force the handlers
          * to process left-over data in the buffer.
          */
+        m_eventLoop->RaiseReadEvent(this);
     }
 }
 

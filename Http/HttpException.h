@@ -5,16 +5,20 @@
 #ifndef WEBSERV_HTTPEXCEPTION_H
 #define WEBSERV_HTTPEXCEPTION_H
 #include <string>
+#include <exception>
+#include "HttpStatusCode.h"
 
-class HttpException
+class HttpException : public std::exception
 {
 public:
-    explicit HttpException(int status) throw();
+    explicit HttpException(const HttpStatusCode &code) throw();
     ~HttpException() throw();
 
-    int GetStatus() const;
+    const HttpStatusCode &GetStatus() const;
 
-    int m_status;
+    virtual const char *what() const throw();
+
+    HttpStatusCode m_statusCode;
 };
 
 

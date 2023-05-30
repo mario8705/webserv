@@ -1,52 +1,64 @@
 #include <csignal>
-#include "Webserv.h"
 #include <iostream>
+#include <sys/wait.h>
+#include "Webserv.h"
 
 static void handler_stub(int)
 {
     Webserv::GetInstance()->Stop();
 }
 
-std::string subsitute_vars(const std::string &input, const std::map<std::string, std::string> &vars)
+static void collect_child_status(int)
 {
-    size_t pos;
-    size_t last;
-    std::string ret;
-    std::map<std::string, std::string>::const_iterator it;
+    pid_t p;
+    int status;
 
-    for (pos = 0; pos < input.size(); )
+    while ((p = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        if ('$' == input[pos] && (pos == 0 || input[pos - 1] != '\\'))
-        {
-            last = ++pos;
-            while (last < input.size() && (input[last] == '_' || std::islower(input[last])))
-                ++last;
-            it = vars.find(input.substr(pos, last - pos));
-            if (it != vars.end()) {
-                ret.insert(ret.end(), it->second.begin(), it->second.end());
-                pos = last;
-            }
-            else
-            {
-                ret.insert(ret.end(), '$');
-            }
-        }
-        else
-        {
-            last = pos + 1;
-            while (last < input.size() && '$' != input[last])
-                ++last;
-            ret.insert(ret.end(), input.begin() + pos, input.begin() + last);
-            pos = last;
-        }
+        std::cout << "Child died: " << p << std::endl;
     }
-    return ret;
 }
+
+#include "Cgi/CgiManager.hpp"
 
 int main(int argc, char *argv[])
 {
     Webserv webserv;
     std::string configPath = "webserv.conf";
+
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, collect_child_status);
+    signal(SIGTERM, handler_stub);
+
+    /*
+    CgiManager::tEnvMap m;
+
+    m["REDIRECT_STATUS"] = "200";
+    m["SCRIPT_FILENAME"] = "htdocs/phpinfo.php";
+    m["HTTP_COOKIE"] = "PHPSESSID=4n27jslhd1j89d0631eh0kog5n; path=/";
+    CgiManager mgr("/usr/local/bin/php-cgi", m);
+
+    mgr.SpawnSubProcess();
+
+    close(mgr.GetMOSI());
+
+    char buf[1024], *p;
+    int n;
+    int wn;
+
+    while ((n = read(mgr.GetMISO(), buf, sizeof(buf))) > 0)
+    {
+        p = buf;
+        while ((wn = write(1, buf, n)) > 0)
+        {
+            p += wn;
+            n -= wn;
+        }
+    }
+
+    printf("Ok c'est fini\n");
+    return 0;
+     */
 
     if (argc >= 3)
     {
@@ -64,8 +76,6 @@ int main(int argc, char *argv[])
     if (!webserv.Bind())
         return 1;
 
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGTERM, handler_stub);
     webserv.Run();
     return 0;
 }

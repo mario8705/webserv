@@ -20,6 +20,8 @@ public:
      * @return true if an error occured (including a caught signal)
      */
     virtual bool LoopOnce() = 0;
+
+    virtual void RaiseReadEvent(IOEvent *evt) = 0;
 };
 
 

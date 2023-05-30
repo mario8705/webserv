@@ -105,6 +105,13 @@ namespace utils
         }
         return s;
     }
+
+    inline bool ends_with(const std::string &s, const std::string &suffix)
+    {
+        if (s.size() >= suffix.size())
+            return !s.compare(s.size() - suffix.size(), suffix.length(), suffix);
+        return false;
+    }
 }
 
 #endif //WEBSERV_STRING_UTILS_HPP

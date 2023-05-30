@@ -7,6 +7,7 @@
 #include "Response.h"
 #include "HttpProtocolCodec.h"
 #include "../IO/DataBuffer.h"
+#include "HttpStatusCode.h"
 
 FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response, int fd, size_t length)
         : m_codec(response->GetHttpCodec()), m_length(length)
@@ -38,7 +39,6 @@ void FileRequestHandler::HandleEvent(EventType type) {
 void FileRequestHandler::HandleRead(DataBuffer *buffer) {
     if (m_codec->GetOutputBuffer()->GetLength() < 65536)
         m_codec->Write(m_event->GetInputBuffer());
- //   printf("Data: %zu\n", m_event->GetInputBuffer()->GetLength());
 }
 
 void FileRequestHandler::HandleWrite(DataBuffer *buffer) {
@@ -48,4 +48,8 @@ void FileRequestHandler::HandleWrite(DataBuffer *buffer) {
 void FileRequestHandler::OnOutputDrained() {
     if (m_codec->GetOutputBuffer()->GetLength() < 65536)
         m_codec->Write(m_event->GetInputBuffer());
+}
+
+void FileRequestHandler::OnDataIncoming(DataBuffer *)
+{
 }

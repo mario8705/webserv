@@ -27,7 +27,7 @@ public:
     void ProcessDataInput();
     void OnOutputDrained();
 
-    void EncodeResponse(Response *response);
+    void WriteResponseHeader();
     void FinalizeResponse();
 
     /**
@@ -36,8 +36,9 @@ public:
      * @param n
      */
     void Write(const void *data, size_t n);
-
     void Write(DataBuffer *buffer);
+
+    void AddHeader(const std::string &name, const std::string &value);
 
     DataBuffer *GetInputBuffer() const;
     DataBuffer *GetOutputBuffer() const;
@@ -46,8 +47,7 @@ private:
     void ParseRequestHeader(const std::string &line);
     void SetRequestHeader(const std::string &method, const std::string &rawPath, const std::string &httpVersion);
     void ParseHeader(const std::string &line);
-    void WriteResponseHeader(int status, const std::string &statusMessage);
-    void WriteHeaders(const tHeaderMap &headers);
+    void WriteChunkHeader(size_t length);
 
     void DispatchRequest();
 
@@ -63,6 +63,12 @@ private:
     std::string m_rawPath;
     IAsyncRequestHandler *m_asyncHandler;
     bool m_pendingFinalizeResponse;
+
+    bool m_chunked;
+    int m_responseStatus;
+    std::string m_responseMessage;
+    tHeaderMap m_responseHeaders;
+    bool m_headersSent;
 };
 
 

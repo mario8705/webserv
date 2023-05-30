@@ -15,6 +15,7 @@ enum HttpMethod
     kHttpMethod_Head,
     kHttpMethod_Options,
 
+    kHttpMethod_Invalid,
     kHttpMethod_Last,
 };
 

@@ -19,7 +19,7 @@ class BufferEvent : public IOEvent
 {
 public:
     BufferEvent(IEventLoop *eventLoop, IBufferEventHandler *handler, int fd);
-    ~BufferEvent();
+    virtual ~BufferEvent();
 
     void NotifyRead();
     void NotifyWrite();

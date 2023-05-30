@@ -51,7 +51,9 @@ void VirtualHost::DispatchRequest(MountPoint *mountPoint, Request *request, Resp
     {
         if (!mountPoint->HandleException(request, response, &e))
         {
-            /* TODO unhandling exception */
+            response->SetStatusCode(e.GetStatus().GetStatusCode());
+            response->SetStatusMessage(e.GetStatus().GetStatusMessage());
+            response->GetBodyBuffer()->PutString(e.GetStatus().GetStatusMessage());
         }
     }
 }

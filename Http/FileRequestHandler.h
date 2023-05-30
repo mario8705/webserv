@@ -25,6 +25,7 @@ public:
     void HandleEvent(EventType type);
 
     void OnOutputDrained();
+    void OnDataIncoming(DataBuffer *);
 
 private:
     BufferEvent *m_event;

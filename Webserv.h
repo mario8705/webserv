@@ -37,6 +37,8 @@ public:
     MimeDatabase *GetMimeDatabase() const;
     IEventLoop *GetEventLoop() const;
 
+    const std::map<std::string, std::string> &GetRootCgiParams() const;
+
     static Webserv *GetInstance();
 
 private:
@@ -47,6 +49,7 @@ private:
     volatile sig_atomic_t m_running;
     MimeDatabase *m_mimeDatabase;
     std::string m_defaultMimeType;
+    std::map<std::string, std::string> m_rootCgiParams;
 
     static Webserv *s_instance;
 

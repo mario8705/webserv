@@ -2,8 +2,34 @@
 #define WEBSERV_CONFIGPROPERTY_H
 #include <vector>
 #include <string>
+#include "../string_utils.hpp"
 
 class Token;
+class ConfigProperty;
+
+class PropertyIterator
+{
+    friend class ConfigProperty;
+
+public:
+    ~PropertyIterator()
+    {
+    }
+
+    ConfigProperty *Next();
+    bool HasNext() const;
+
+private:
+    PropertyIterator(const std::vector<ConfigProperty *> &v, const std::string &filter, bool blockOnly)
+        : m_filter(filter), m_current(v.begin()), m_end(v.end()), m_blockOnly(blockOnly)
+    {
+    }
+
+    std::string m_filter;
+    bool m_blockOnly;
+    std::vector<ConfigProperty *>::const_iterator m_current;
+    std::vector<ConfigProperty *>::const_iterator m_end;
+};
 
 class ConfigProperty
 {
@@ -21,6 +47,16 @@ public:
     bool IsBlock() const;
 
     void Dump(std::ostream &out, int indent = 0);
+
+    PropertyIterator FindAllProps(const std::string &name) const
+    {
+        return PropertyIterator(_body, name, false);
+    }
+
+    size_t GetParamsCount() const
+    {
+        return _params.size();
+    }
 
     static ConfigProperty *push_config(const std::vector<Token *> &tokens);
 

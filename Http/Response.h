@@ -12,6 +12,7 @@ class HttpStatusCode;
 class IAsyncRequestHandler;
 class HttpProtocolCodec;
 class HttpClientHandler;
+class Request;
 
 enum HttpTransferEncoding
 {
@@ -21,6 +22,8 @@ enum HttpTransferEncoding
 
 class Response
 {
+    friend class HttpProtocolCodec;
+
 public:
     typedef std::map<std::string, std::string> tHttpHeadersMap;
 
@@ -44,6 +47,8 @@ public:
     bool SendFile(const std::string &path);
     bool SendFile(const std::string &path, size_t length);
 
+    bool CgiPass(Request *req, const std::string &scriptFilename, const std::string &path);
+
     HttpProtocolCodec *GetHttpCodec() const;
 
     void SetContentLength(size_t length);
@@ -58,8 +63,9 @@ public:
     DataBuffer *GetBodyBuffer() const;
 
 protected:
-    Response();
+    explicit Response(HttpClientHandler *clientHandler);
 
+private:
     HttpClientHandler *m_clientHandler;
     HttpProtocolCodec *m_codec;
     int m_status;

@@ -4,6 +4,11 @@
 
 #include "URL.h"
 #include <iostream>
+#include <sstream>
+
+URL::URL()
+{
+}
 
 URL::URL(std::string path)
     : m_path(path)
@@ -105,4 +110,16 @@ std::string URL::Encode(const std::string &s)
         res.insert(res.end(), static_cast<char>(ch));
     }
     return res;
+}
+
+URL::URL(const std::string &protocol, const std::string &host, const std::string &path, const std::string &query)
+    : m_protocol(protocol), m_host(host), m_path(path), m_query(query)
+{
+}
+
+std::string URL::ToURI() const {
+    std::stringstream ss;
+
+    ss << m_protocol << "//" << m_host << m_path << m_query;
+    return ss.str();
 }

@@ -6,8 +6,8 @@
 #include <sstream>
 #include "HttpClientHandler.h"
 #include "../IO/DataBuffer.h"
-#include "Internal/HttpRequest.h"
-#include "Internal/HttpResponse.h"
+#include "Request.h"
+#include "Response.h"
 #include "../IO/BufferEvent.h"
 #include "AsyncRequestHandler.h"
 #include "../string_utils.hpp"
@@ -19,6 +19,7 @@ HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *inp
 {
     m_requestHeaderParsed = false;
     m_asyncHandler = NULL;
+    m_headersSent = false;
     m_pendingFinalizeResponse = false;
 
     m_methods.insert(std::make_pair("GET", kHttpMethod_Get));
@@ -40,40 +41,76 @@ void HttpProtocolCodec::ProcessDataInput()
     std::string line;
     bool dispatchRequest;
 
-    dispatchRequest = false;
-    while (m_inputBuffer->Readln(line))
-    {
-        if (!m_requestHeaderParsed)
-        {
-            ParseRequestHeader(line);
-            m_requestHeaderParsed = true;
+    if (!m_asyncHandler) {
+        dispatchRequest = false;
+        while (m_inputBuffer->Readln(line)) {
+            try {
+                if (!m_requestHeaderParsed) {
+                    ParseRequestHeader(line);
+                    m_requestHeaderParsed = true;
 
-            if (HttpVersion::kHttpVersion_1_0 == m_httpVersion)
-            {
-                dispatchRequest = true;
+                    if (HttpVersion::kHttpVersion_1_0 == m_httpVersion) {
+                        dispatchRequest = true;
+                    }
+                } else {
+                    if (line.empty()) {
+                        if (m_method == kHttpMethod_Post ||
+                            m_method == kHttpMethod_Patch ||
+                            m_method == kHttpMethod_Put) {
+                            if (m_headers.find("Content-Length") == m_headers.end()) {
+                                throw HttpException(HttpStatusCode::LengthRequired);
+                            }
+
+                            std::string contentLength = m_headers["Content-Length"];
+                            size_t i;
+
+                            for (i = 0; i < contentLength.size(); ++i) {
+                                if (!std::isdigit(contentLength[i]) || i > 10) {
+                                    throw HttpException(HttpStatusCode::BadRequest);
+                                }
+                            }
+                            m_bufferEvent->Enable(kEvent_Read | kEvent_Write);
+                        }
+                        else
+                        {
+                            /* Disable reading while processing the request */
+                            m_bufferEvent->Enable(kEvent_Write);
+                        }
+                        dispatchRequest = true;
+                    } else
+                        ParseHeader(line);
+                }
+            }
+            catch (const HttpException &e) {
+                m_responseMessage = e.GetStatus().GetStatusMessage();
+                m_responseStatus = e.GetStatus().GetStatusCode();
+                m_httpVersion = HttpVersion(1, 0);
+                m_responseHeaders.clear();
+                m_responseHeaders["Content-Length"] = "0";
+                m_responseHeaders["Content-Type"] = "text/html; charset=utf-8";
+                m_bufferEvent->Enable(kEvent_Write);
+                WriteResponseHeader();
+                m_handler->Disconnect(true);
+                return;
+            }
+            if (dispatchRequest) {
+                dispatchRequest = false;
+                DispatchRequest();
+                if (m_asyncHandler)
+                    break ;
             }
         }
-        else
-        {
-            if (line.empty())
-                dispatchRequest = true;
-            else
-                ParseHeader(line);
-        }
-        if (dispatchRequest)
-        {
-            dispatchRequest = false;
-            DispatchRequest();
-            if (m_asyncHandler)
-                return ;
+        if (m_inputBuffer->GetLength() >= m_inputBuffer->GetReadHighWatermark()) {
+            /* TODO handle veryyyy looong requests */
+            // printf("Buffer full and no line could be read\n");
+            //m_event->GetOutputBuffer()->PutString("Buffer full");
+            // Disconnect(true);
         }
     }
-    if (m_inputBuffer->GetLength() >= m_inputBuffer->GetReadHighWatermark())
+
+    if (m_asyncHandler)
     {
-        /* TODO handle veryyyy looong requests */
-       // printf("Buffer full and no line could be read\n");
-        //m_event->GetOutputBuffer()->PutString("Buffer full");
-       // Disconnect(true);
+        m_asyncHandler->OnDataIncoming(m_inputBuffer);
     }
 }
 
@@ -85,15 +122,6 @@ void HttpProtocolCodec::OnOutputDrained()
     }
     if (m_pendingFinalizeResponse)
         FinalizeResponse();
-}
-
-void HttpProtocolCodec::EncodeResponse(Response *response)
-{
-    WriteResponseHeader(response->GetStatusCode(), response->GetStatusMessage());
-    WriteHeaders(response->GetHeaders());
-    m_outputBuffer->PutString("\r\n");
-
-   // out->AddBuffer(response->GetOutputBuffer());
 }
 
 void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
@@ -109,9 +137,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
     httpVersion = "HTTP/1.0";
     if (methodSep == std::string::npos)
     {
-        printf("Invalid request !!\n");
-        /* TODO invalid request */
-        return ;
+        throw HttpException(HttpStatusCode::BadRequest);
     }
     method = line.substr(0, methodSep);
     if (httpVersionSep != std::string::npos && httpVersionSep != methodSep)
@@ -129,20 +155,19 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
 void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::string &rawPath,
                                          const std::string &httpVersion)
 {
-    if (!m_httpVersion.Parse(httpVersion))
+    if (!m_httpVersion.Parse(httpVersion) || m_httpVersion.GetMajor() > 1)
     {
-        /* TODO printf("Invalid request : Unknown http version\n"); */
-        return ;
+        throw HttpException(HttpStatusCode::BadRequest);
     }
+
+    m_httpVersion = HttpVersion::Min(HttpVersion(1, 1), m_httpVersion);
 
     tHttpMethodsMap::const_iterator methodsIt = m_methods.find(method);
     if (methodsIt == m_methods.end())
-    {
-        /* TODO printf("Invalid request : Unknown http method\n"); */
-        return ;
-    }
+        m_method = kHttpMethod_Invalid;
+    else
+        m_method = methodsIt->second;
 
-    m_method = methodsIt->second;
     m_rawPath = rawPath;
     utils::trim(m_rawPath);
 }
@@ -168,36 +193,35 @@ void HttpProtocolCodec::ParseHeader(const std::string &line)
     m_headers.insert(std::make_pair(key, value));
 }
 
-void HttpProtocolCodec::WriteResponseHeader(int status, const std::string &statusMessage)
+void HttpProtocolCodec::WriteResponseHeader()
 {
     std::stringstream ss;
-
-    ss << m_httpVersion << " " << status << " " << statusMessage << "\r\n";
-    m_outputBuffer->PutString(ss.str());
-}
-
-void HttpProtocolCodec::WriteHeaders(const tHeaderMap &headers)
-{
     tHeaderMap::const_iterator it;
-    std::stringstream ss;
 
-    for (it = headers.begin(); it != headers.end(); ++it)
+    if (m_headersSent)
+        return ;
+    m_headersSent = true;
+
+    ss << m_httpVersion << " " << m_responseStatus << " " << m_responseMessage << "\r\n";
+    for (it = m_responseHeaders.begin(); it != m_responseHeaders.end(); ++it)
     {
         ss << it->first << ": " << it->second << "\r\n";
     }
+    ss << "\r\n";
     m_outputBuffer->PutString(ss.str());
 }
 
 void HttpProtocolCodec::DispatchRequest()
 {
-    HttpRequest request(m_handler, m_method, m_rawPath, m_httpVersion, m_headers);
-    HttpResponse response(m_handler);
+    Request request(m_handler, m_headers);
+    Response response(m_handler);
     tHeaderMap headers;
     IAsyncRequestHandler *asyncHandler;
     DataBuffer *body;
 
-    /* Disable reading while processing the request */
-    m_bufferEvent->Enable(kEvent_Write);
+    request.SetMethod(m_method);
+    request.SetRawPath(m_rawPath);
+    request.SetProtocolVersion(m_httpVersion);
 
     try {
         m_handler->HandleRequest(&request, &response);
@@ -207,35 +231,34 @@ void HttpProtocolCodec::DispatchRequest()
         /* TODO unhandled exception */
         /* Exception shall be handled inside ServerHost */
         /* so we should never have to catch it here */
-        printf("Exception with code : %d\n", e.GetStatus());
     }
     catch (...)
     {
         printf("Unexpected error\n");
     }
 
-    headers.swap(response.GetHeaders());
+    m_responseHeaders.swap(response.GetHeaders());
 
     if (response.IsChunked())
     {
-        headers["Transfer-Encoding"] = "chunked";
+        m_responseHeaders["Transfer-Encoding"] = "chunked";
     }
     else
     {
-        headers["Content-Length"] = utils::to_string(response.GetContentLength());
+        m_responseHeaders["Content-Length"] = utils::to_string(response.GetContentLength());
     }
 
-    WriteResponseHeader(response.GetStatusCode(), response.GetStatusMessage());
-    WriteHeaders(headers);
-    m_outputBuffer->PutString("\r\n");
+    m_responseStatus = response.GetStatusCode();
+    m_responseMessage = response.GetStatusMessage();
 
     m_asyncHandler = response.GetAsyncHandler();
-    printf("Wesh\n");
+    m_chunked = response.IsChunked();
 
     body = response.GetBodyBuffer();
     if (body->GetLength() > 0)
     {
-        m_outputBuffer->AddBuffer(body);
+        WriteResponseHeader();
+        Write(body);
         FinalizeResponse();
     }
 }
@@ -243,6 +266,18 @@ void HttpProtocolCodec::DispatchRequest()
 void HttpProtocolCodec::FinalizeResponse()
 {
     tHeaderMap::const_iterator it;
+
+    if (!m_pendingFinalizeResponse)
+    {
+        if (!m_headersSent)
+            WriteResponseHeader();
+
+        if (m_chunked)
+        {
+            WriteChunkHeader(0);
+            m_outputBuffer->PutString("\r\n");
+        }
+    }
 
     if (m_outputBuffer->GetLength() > 0)
     {
@@ -272,6 +307,7 @@ void HttpProtocolCodec::FinalizeResponse()
     m_headers.clear();
     m_requestHeaderParsed = false;
     m_pendingFinalizeResponse = false;
+    m_headersSent = false;
 
     /* Re-enable reads to receive the next request */
     m_bufferEvent->Enable(kEvent_Read);
@@ -279,12 +315,33 @@ void HttpProtocolCodec::FinalizeResponse()
 
 void HttpProtocolCodec::Write(const void *data, size_t n)
 {
+    if (!m_headersSent)
+        WriteResponseHeader();
     m_outputBuffer->Write(data, n);
 }
 
 void HttpProtocolCodec::Write(DataBuffer *buffer)
 {
+    if (!m_headersSent)
+        WriteResponseHeader();
+
+    if (m_chunked)
+    {
+        WriteChunkHeader(buffer->GetLength());
+    }
     m_outputBuffer->AddBuffer(buffer);
+    if (m_chunked)
+    {
+        m_outputBuffer->PutString("\r\n");
+    }
+}
+
+void HttpProtocolCodec::WriteChunkHeader(size_t length)
+{
+    std::stringstream ss;
+
+    ss << std::hex << length << "\r\n";
+    m_outputBuffer->PutString(ss.str());
 }
 
 DataBuffer *HttpProtocolCodec::GetInputBuffer() const {
@@ -293,4 +350,27 @@ DataBuffer *HttpProtocolCodec::GetInputBuffer() const {
 
 DataBuffer *HttpProtocolCodec::GetOutputBuffer() const {
     return m_outputBuffer;
+}
+
+void HttpProtocolCodec::AddHeader(const std::string &name, const std::string &value)
+{
+    size_t sep;
+
+    /* Special case for the Status header which changes the status code and message */
+    if ("Status" == name)
+    {
+        sep = value.find_first_of(' ');
+        if (std::string::npos == sep)
+            return ;
+        std::string code = value.substr(0, sep);
+        std::string status = value.substr(sep + 1);
+
+        utils::trim(code);
+        utils::trim(status);
+        m_responseStatus = std::atoi(code.c_str());
+        m_responseMessage = status;
+    }
+    else {
+        m_responseHeaders[name] = value;
+    }
 }

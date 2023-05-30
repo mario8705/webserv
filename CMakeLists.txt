@@ -26,8 +26,6 @@ add_executable(webserv
         ./Http/FileRequestHandler.cpp
         ./Http/HttpProtocolCodec.cpp
         ./Http/Request.cpp
-        ./Http/Internal/HttpResponse.cpp
-        ./Http/Internal/HttpRequest.cpp
         ./Http/HttpStatusCode.cpp
         ./Http/HttpClient.cpp
         ./Webserv.cpp
@@ -38,4 +36,4 @@ add_executable(webserv
         ./string_utils.hpp
         ./MountPoint.cpp
         ./Network/NetworkAddress4.cpp
-        ./Network/ListenerEvent.cpp)
+        ./Network/ListenerEvent.cpp Config/PropertyIterator.cpp Http/CGIRequestHandler.cpp Http/CGIRequestHandler.h DirectoryListing.cpp DirectoryListing.h)
