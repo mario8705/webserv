@@ -26,6 +26,11 @@
         endforeach;
 ?>
     </table>
+    <h2>Files</h2>
+    <hr>
+    <p>
+        <?php var_dump($_FILES); ?>
+    </p>
 <?php
     else:
 ?>
