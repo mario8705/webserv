@@ -1,6 +1,7 @@
 #include "ConfigProperty.h"
 #include <stack>
 #include "Token.h"
+#include <iostream>
 
 ConfigProperty::ConfigProperty()
     : m_isBlock(true)
@@ -54,7 +55,15 @@ ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
         else if (tokens[i]->getType() == kTokenType_LeftBracket)
         {
             property = new ConfigProperty(tmp, true);
-            stck.top()->add_body(property);
+            if (!stck.empty())
+            {
+                stck.top()->add_body(property);
+            }
+            else
+            {
+                std::cerr << "Stack error" << std::endl;
+                throw std::runtime_error("Stack Fatal error ");
+            }
             stck.push(property);
             tmp.clear();
         }
