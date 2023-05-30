@@ -206,13 +206,24 @@ void Webserv::ParseTypesBlock(ConfigProperty *typesBlock)
 
 struct listen_validator
 {
+    /*Todo a faire valider par Alavaud.*/
     bool operator()(ConfigProperty *prop) const
     {
         const std::string &addr = prop->getParams()[1];
-
+        if (prop->getParams().size() < 2 || !isdigit(prop->getParams()[1][0]))
+        {
+            std::cerr << "Fatal error : invalid port" << std::endl;
+            return false;
+        }
+        if (std::stoi(addr) >= 65536)
+        {
+            std::cerr << "The port should be beetween 0 and 65535" << std::endl;
+            return false;
+        }
         if (Pattern::Matches("^[0-9]+$", addr) ||
             Pattern::Matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$", addr) ||
-            Pattern::Matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+:[0-9]+$", addr))
+            Pattern::Matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+:[0-9]+$", addr)
+            )
         {
             return true;
         }
