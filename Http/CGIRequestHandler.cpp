@@ -41,7 +41,6 @@ public:
                 if (line.empty())
                 {
                     m_headersReceived = true;
-                    printf("Headers received !\n");
                     break ;
                 }
                 if (std::string::npos != (sep = line.find_first_of(':')))
@@ -54,10 +53,8 @@ public:
                 }
             }
         }
-        printf("Got data\n");
         if (m_headersReceived && in->GetLength() > 0)
         {
-            printf("Writing %zu\n", in->GetLength());
             m_codec->Write(in);
         }
     }
@@ -68,7 +65,6 @@ public:
 
     void HandleEvent(EventType type)
     {
-        printf("Got event\n");
         m_bev->Enable(0);
         m_codec->FinalizeResponse();
     }
@@ -88,7 +84,6 @@ CGIRequestHandler::CGIRequestHandler(IEventLoop *eventLoop, Response *response, 
     close(manager->GetMOSI());
 
     response->SetChunked(true);
-    printf("Set %p = %d\n", response, response->IsChunked());
 
     m_ptb = new PipeToBufferEvent(eventLoop, manager->GetMISO(),
                                   response);

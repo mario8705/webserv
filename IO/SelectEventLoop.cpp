@@ -34,6 +34,23 @@ void SelectEventLoop::RegisterEvent(IOEvent *evt)
 void SelectEventLoop::UnregisterEvent(IOEvent *evt)
 {
     tEventMap::iterator it;
+    tRaisedEventList::iterator it2;
+
+    /* Remove from pending events list */
+    for (it2 = m_pendingReads.begin(); it2 != m_pendingReads.end(); ++it2)
+    {
+        if (*it2 == evt) {
+            m_pendingReads.erase(it2);
+            break ;
+        }
+    }
+    for (it2 = m_pendingWrites.begin(); it2 != m_pendingWrites.end(); ++it2)
+    {
+        if (*it2 == evt) {
+            m_pendingWrites.erase(it2);
+            break ;
+        }
+    }
 
     it = m_eventMap.find(evt->GetFileDescriptor());
     if (it != m_eventMap.end())
@@ -50,8 +67,6 @@ bool SelectEventLoop::LoopOnce()
     int nfds;
     int n;
     tEventMap::iterator it;
-    std::vector<IOEvent *> writeEvents;
-    size_t i;
 
     FD_ZERO(&rdset);
     FD_ZERO(&wrset);
@@ -68,9 +83,12 @@ bool SelectEventLoop::LoopOnce()
         if (evt->IsWritable())
             FD_SET(fd, &wrset);
     }
-    n = select(nfds + 1, &rdset, &wrset, NULL, NULL);
+    do {
+        n = select(nfds + 1, &rdset, &wrset, NULL, NULL);
+    } while (n < 0 && errno == EINTR);
     if (n < 0)
     {
+        perror("select");
         return true;
     }
     for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
@@ -80,11 +98,9 @@ bool SelectEventLoop::LoopOnce()
         if (FD_ISSET(fd, &rdset))
             m_pendingReads.push_back(evt);
         if (FD_ISSET(fd, &wrset))
-            writeEvents.push_back(evt);
+            m_pendingWrites.push_back(evt);
     }
     ProcessPendingEvents();
-    for (i = 0; i < writeEvents.size(); ++i)
-        writeEvents[i]->NotifyWrite();
     return false;
 }
 
@@ -112,5 +128,11 @@ void SelectEventLoop::ProcessPendingEvents()
         evt = m_pendingReads.back();
         m_pendingReads.pop_back();
         evt->NotifyRead();
+    }
+    while (!m_pendingWrites.empty())
+    {
+        evt = m_pendingWrites.back();
+        m_pendingWrites.pop_back();
+        evt->NotifyWrite();
     }
 }

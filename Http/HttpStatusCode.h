@@ -15,8 +15,13 @@ public:
     int GetStatusCode() const;
     const char *GetStatusMessage() const;
 
+    /* 2xx */
     static HttpStatusCode Ok;
+
+    /* 4xx */
     static HttpStatusCode NotFound;
+    static HttpStatusCode MethodNotAllowed;
+    static HttpStatusCode RequestURITooLong;
 
 private:
     int m_status;

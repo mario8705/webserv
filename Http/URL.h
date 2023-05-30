@@ -17,6 +17,8 @@ public:
 
     std::string GetAbsolutePath(const std::string &root) const;
 
+    std::string ToURI() const;
+
     static std::string Decode(const std::string &s);
     static std::string Encode(const std::string &s);
 

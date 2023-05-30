@@ -29,6 +29,7 @@ private:
 
     tEventMap m_eventMap;
     tRaisedEventList m_pendingReads;
+    tRaisedEventList m_pendingWrites;
 };
 
 

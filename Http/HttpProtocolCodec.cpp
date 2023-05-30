@@ -129,12 +129,10 @@ void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::s
 
     tHttpMethodsMap::const_iterator methodsIt = m_methods.find(method);
     if (methodsIt == m_methods.end())
-    {
-        /* TODO printf("Invalid request : Unknown http method\n"); */
-        return ;
-    }
+        m_method = kHttpMethod_Invalid;
+    else
+        m_method = methodsIt->second;
 
-    m_method = methodsIt->second;
     m_rawPath = rawPath;
     utils::trim(m_rawPath);
 }
@@ -201,7 +199,6 @@ void HttpProtocolCodec::DispatchRequest()
         /* TODO unhandled exception */
         /* Exception shall be handled inside ServerHost */
         /* so we should never have to catch it here */
-        printf("Exception with code : %d\n", e.GetStatus());
     }
     catch (...)
     {
@@ -325,5 +322,23 @@ DataBuffer *HttpProtocolCodec::GetOutputBuffer() const {
 
 void HttpProtocolCodec::AddHeader(const std::string &name, const std::string &value)
 {
-    m_responseHeaders[name] = value;
+    size_t sep;
+
+    /* Special case for the Status header which changes the status code and message */
+    if ("Status" == name)
+    {
+        sep = value.find_first_of(' ');
+        if (std::string::npos == sep)
+            return ;
+        std::string code = value.substr(0, sep);
+        std::string status = value.substr(sep + 1);
+
+        utils::trim(code);
+        utils::trim(status);
+        m_responseStatus = std::atoi(code.c_str());
+        m_responseMessage = status;
+    }
+    else {
+        m_responseHeaders[name] = value;
+    }
 }

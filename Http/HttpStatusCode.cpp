@@ -25,3 +25,7 @@ const char *HttpStatusCode::GetStatusMessage() const
 
 HttpStatusCode HttpStatusCode::Ok(200, "Ok");
 HttpStatusCode HttpStatusCode::NotFound(404, "Not Found");
+
+HttpStatusCode HttpStatusCode::MethodNotAllowed(405, "Method Not Allowed");
+HttpStatusCode HttpStatusCode::RequestURITooLong(414, "Request-URI Too Long");
+

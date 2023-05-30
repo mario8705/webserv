@@ -4,8 +4,8 @@
 
 #include "HttpException.h"
 
-HttpException::HttpException(int status) throw()
-    : m_status(status)
+HttpException::HttpException(const HttpStatusCode &code) throw()
+    : m_statusCode(code)
 {
 }
 
@@ -13,7 +13,11 @@ HttpException::~HttpException() throw()
 {
 }
 
-int HttpException::GetStatus() const
+const HttpStatusCode &HttpException::GetStatus() const
 {
-    return m_status;
+    return m_statusCode;
+}
+
+const char *HttpException::what() const throw() {
+    return "HttpException"; /* TODO lol ? */
 }

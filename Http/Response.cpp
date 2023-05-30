@@ -116,17 +116,24 @@ bool Response::IsChunked() const {
     return m_chunked;
 }
 
+/**
+ * @deprecated
+ * @param str
+ * @return
+ */
 int Response::Write(const std::string &str)
 {
     return Write(str.c_str(), str.size());
 }
 
+/**
+ * @deprecated
+ * @param data
+ * @param n
+ * @return
+ */
 int Response::Write(const void *data, size_t n)
 {
-    if (m_chunked)
-    {
-        printf("Is Chunked\n");
-    }
     return m_body->Write(data, n);
 }
 
@@ -158,13 +165,13 @@ bool Response::CgiPass(Request *req, const std::string &scriptFilename, const st
     URL url = req->GetUrl();
 
     m["REDIRECT_STATUS"] = "200";
-    m["SCRIPT_FILENAME"] = scriptFilename;
-    m["REQUEST_URI"] = req->GetRawPath();
+    m["SCRIPT_FILENAME"] = "./htdocs/wordpress/index.php"; //scriptFilename;
+    m["REQUEST_URI"] = url.m_path; /* + query */
     m["QUERY_STRING"] = url.m_query; //url.GetQueryString();
     m["REQUEST_METHOD"] = "GET";
     m["DOCUMENT_ROOT"] = "./htdocs/wordpress";
-    m["DOCUMENT_URI"] = "http://localhost:8080" + req->GetRawPath();
-    m["SCRIPT_NAME"] = "/index.php";
+    //m["DOCUMENT_URI"] = "http://localhost:8080" + req->GetRawPath();
+   // m["SCRIPT_NAME"] = "i like trains";
 
     req->EncodeCGIHeaders(m);
 

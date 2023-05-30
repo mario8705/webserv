@@ -13,6 +13,7 @@
 #include "Http/CGIRequestHandler.h"
 #include "Http/HttpProtocolCodec.h"
 #include "string_utils.hpp"
+#include "Http/HttpStatusCode.h"
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
@@ -63,11 +64,14 @@ void MountPoint::HandleRequest(Request *request, Response *response)
     std::map<std::string, std::string> params;
     std::map<std::string, std::string>::const_iterator params_it;
 
+    if (request->GetMethod() == kHttpMethod_Invalid)
+    {
+        throw HttpException(HttpStatusCode::MethodNotAllowed);
+    }
+
     PopulateCgiParams(request, params);
 
     path = LocateFile(url);
-    printf("File exists %s\n", path.c_str());
-
     if (stat(path.c_str(), &st) >= 0)
     {
         if (S_ISDIR(st.st_mode))
@@ -111,7 +115,7 @@ void MountPoint::HandleRequest(Request *request, Response *response)
         }
     }
     /* TODO Exceptions aren't working anymore */
-    throw HttpException(404);
+    throw HttpException(HttpStatusCode::NotFound);
 }
 
 bool MountPoint::HandleException(Request *request, Response *response, HttpException *e)
@@ -119,12 +123,11 @@ bool MountPoint::HandleException(Request *request, Response *response, HttpExcep
     std::map<int, std::string>::const_iterator it;
     std::string path;
 
-    it = m_errorDocuments.find(e->GetStatus());
+    it = m_errorDocuments.find(e->GetStatus().GetStatusCode());
     if (m_errorDocuments.end() != it)
     {
         path = LocateFile(URL(it->second));
 
-        /* TODO let the request handler select the appropriate mime type */
         /* TODO match response status to exception's */
         if (response->SendFile(path))
         {
