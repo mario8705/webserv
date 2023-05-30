@@ -148,8 +148,16 @@ bool Webserv::LoadConfig(const std::string &path)
     {
         return false;
     }
-    rootProperty = ConfigProperty::push_config(tokens);
-    ParseConfig(rootProperty);
+    try {
+        rootProperty = ConfigProperty::push_config(tokens);
+        ParseConfig(rootProperty);
+    }
+    catch (std::exception &exception)
+    {
+        std::cerr << "Error:Bad configuration file (" << exception.what() << ")" << std::endl;
+        delete rootProperty;
+        return false;
+    }
     delete rootProperty;
     return true;
 }
@@ -215,7 +223,7 @@ struct listen_validator
             std::cerr << "Fatal error : invalid port" << std::endl;
             return false;
         }
-        if (std::stoi(addr) >= 65536)
+        if (std::atoi(addr.c_str()) >= 65536)
         {
             std::cerr << "The port should be beetween 0 and 65535" << std::endl;
             return false;
