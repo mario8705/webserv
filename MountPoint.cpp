@@ -14,6 +14,8 @@
 #include "Http/HttpProtocolCodec.h"
 #include "string_utils.hpp"
 #include "Http/HttpStatusCode.h"
+#include "DirectoryListing.h"
+#include "IO/DataBuffer.h"
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
@@ -84,16 +86,16 @@ void MountPoint::HandleRequest(Request *request, Response *response)
             DIR *dirp;
             struct dirent *dent;
 
-            response->AddHeader("Content-Type", "text/html");
+            response->AddHeader("Content-Type", "text/html; charset=utf-8");
 
             if (NULL != (dirp = opendir(path.c_str())))
             {
-                while (NULL != (dent = readdir(dirp)))
-                {
-                    response->Write("<p>");
-                    response->Write(dent->d_name);
-                    response->Write("</p>");
-                }
+                DirectoryListing dir(dirp, url.m_path);
+                std::stringstream ss;
+
+                dir.Write(ss);
+
+                response->GetBodyBuffer()->PutString(ss.str());
                 closedir(dirp);
             }
             return ;
