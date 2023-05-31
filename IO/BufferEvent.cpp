@@ -86,7 +86,8 @@ void BufferEvent::Enable(int flags)
          * We avoid that by manually triggered a read event to force the handlers
          * to process left-over data in the buffer.
          */
-        m_eventLoop->RaiseReadEvent(this);
+        m_handler->HandleRead(m_inputBuffer);
+        //m_eventLoop->RaiseReadEvent(this);
     }
 }
 
