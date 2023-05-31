@@ -83,6 +83,8 @@ public:
     {
         m_bev = new BufferEvent(eventLoop, this, outfd);
         m_bev->Enable(kEvent_Write);
+
+        printf("FDP de fd %d\n", outfd);
     }
 
     ~BufferEventToPipe()
@@ -102,7 +104,7 @@ public:
         else
             m_bytesLeft -= in->GetLength();
 
-        printf("Bytes left %zu\n", m_bytesLeft);
+        printf("Bytes left %zu, input %zu\n", m_bytesLeft, in->GetLength());
         m_bev->GetOutputBuffer()->AddBuffer(in);
         printf("Output buffer size %zu\n", m_bev->GetOutputBuffer()->GetLength());
     }
@@ -113,12 +115,12 @@ public:
 
     void HandleEvent(EventType)
     {
-        printf("Even\n");
+        printf("Event\n");
     }
 
     void HandleWrite(DataBuffer *out)
     {
-        printf("Data fully written\n");
+        printf("Data fully written %zu\n", m_bytesLeft);
         if (out->GetLength() == 0 && m_bytesLeft == 0)
         {
             delete m_bev;
