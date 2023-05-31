@@ -17,7 +17,7 @@
 #include "Webserv.h"
 
 ServerHost::ServerHost(Webserv *webserv, NetworkAddress4 bindAddress)
-    : m_webserv(webserv), m_eventLoop(webserv->GetEventLoop()), m_bindAddress(bindAddress)
+    : m_eventLoop(webserv->GetEventLoop()), m_bindAddress(bindAddress)
 {
     m_listenerEvent = NULL;
 }

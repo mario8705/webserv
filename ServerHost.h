@@ -49,7 +49,6 @@ public:
 private:
     VirtualHost *MatchVirtualHost(std::string host);
 
-    Webserv *m_webserv;
     IEventLoop *m_eventLoop;
     ListenerEvent *m_listenerEvent;
     NetworkAddress4 m_bindAddress;

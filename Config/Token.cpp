@@ -20,6 +20,16 @@ std::string Token::getToken() const
     return _token;
 }
 
+int Token::getColumn() const
+{
+    return m_column;
+}
+
+int Token::getLine() const
+{
+    return m_line;
+}
+
 bool Token::tokenization(const std::string &filename, std::vector<Token *> &tokens)
 {
     std::ifstream file(filename.c_str());

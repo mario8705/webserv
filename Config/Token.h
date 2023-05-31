@@ -13,6 +13,9 @@ public:
     TokenType getType() const;
     std::string getToken() const;
 
+    int getLine() const;
+    int getColumn() const;
+
     static bool tokenization(const std::string &filename, std::vector<Token *> &tokens);
 
 private:

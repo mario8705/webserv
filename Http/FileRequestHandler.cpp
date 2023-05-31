@@ -10,7 +10,7 @@
 #include "HttpStatusCode.h"
 
 FileRequestHandler::FileRequestHandler(IEventLoop *eventLoop, Response *response, int fd, size_t length)
-        : m_codec(response->GetHttpCodec()), m_length(length)
+        : m_codec(response->GetHttpCodec())
 {
     m_event = new BufferEvent(eventLoop, this, fd);
     m_event->Enable(kEvent_Read);

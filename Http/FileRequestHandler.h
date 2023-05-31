@@ -30,7 +30,6 @@ public:
 private:
     BufferEvent *m_event;
     HttpProtocolCodec *m_codec;
-    size_t m_length;
 };
 
 #endif //WEBSERV_FILEREQUESTHANDLER_H
