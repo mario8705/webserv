@@ -16,12 +16,12 @@ SRCS:= Cgi/CgiManager.cpp  \
       Config/Token.cpp \
       Http/CGIRequestHandler.cpp \
       Http/FileRequestHandler.cpp \
-      Http/HttpClient.cpp \
       Http/HttpClientHandler.cpp \
       Http/HttpException.cpp \
       Http/HttpProtocolCodec.cpp \
       Http/HttpStatusCode.cpp \
       Http/HttpVersion.cpp \
+      Http/HttpRegistry.cpp \
       Http/Request.cpp \
       Http/Response.cpp \
       Http/URL.cpp \
@@ -53,13 +53,13 @@ SRCS:= Cgi/CgiManager.cpp  \
         Http/AsyncRequestHandler.h \
         Http/CGIRequestHandler.h \
         Http/FileRequestHandler.h \
-        Http/HttpClient.h \
         Http/HttpClientHandler.h \
         Http/HttpException.h \
         Http/HttpMethod.h \
         Http/HttpProtocolCodec.h \
         Http/HttpStatusCode.h \
         Http/HttpVersion.h \
+        Http/HttpRegistry.h \
         Http/Request.h \
         Http/RequestHandler.h \
         Http/Response.h \

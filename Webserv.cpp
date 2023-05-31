@@ -252,7 +252,6 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
 {
     PropertyIterator propsIterator = serverBlock->FindAllProps();
     PropertyIterator blocksIterator = serverBlock->FindAllBlocks();
-    size_t maxBodySize;
     ConfigProperty *prop;
     size_t i, j;
 
@@ -262,7 +261,6 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
     VirtualHost *virtualHost = new VirtualHost;
     m_virtualHosts.push_back(virtualHost);
 
-    maxBodySize = 8388608;
     while ((prop = propsIterator.Next()) != NULL)
     {
         const std::vector<std::string> &params = prop->getParams();

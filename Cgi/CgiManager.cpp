@@ -18,7 +18,7 @@ CgiManager::CgiManager(const std::string &pathToCgi, const std::map<std::string,
     m_miso = -1;
 }
 
-CgiManager::CgiManager(const CgiManager &copy)
+CgiManager::CgiManager(const CgiManager &)
 {
 }
 
@@ -26,7 +26,7 @@ CgiManager::~CgiManager()
 {
 }
 
-CgiManager &CgiManager::operator=(const CgiManager &toAssign) {
+CgiManager &CgiManager::operator=(const CgiManager &) {
     return *this;
 }
 

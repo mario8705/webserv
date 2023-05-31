@@ -51,9 +51,9 @@ private:
     void DispatchRequest();
 
     HttpClientHandler *m_handler;
-    BufferEvent *m_bufferEvent;
     DataBuffer *m_inputBuffer;
     DataBuffer *m_outputBuffer;
+    BufferEvent *m_bufferEvent;
     tHeaderMap m_headers;
     bool m_requestHeaderParsed;
     HttpMethod m_method;

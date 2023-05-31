@@ -50,7 +50,7 @@ BufferChain *BufferChain::Allocate(size_t capacity) {
     return chain;
 }
 
-const int BufferChain::kMaxPooledChains = 256;
+const size_t BufferChain::kMaxPooledChains = 256;
 
 void BufferChain::ReleasePool() {
     std::vector<BufferChain *>::const_iterator it;

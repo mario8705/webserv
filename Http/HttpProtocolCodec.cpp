@@ -200,7 +200,6 @@ void HttpProtocolCodec::DispatchRequest()
     Request request(m_handler, m_headers);
     Response response(m_handler);
     tHeaderMap headers;
-    IAsyncRequestHandler *asyncHandler;
     DataBuffer *body;
 
     request.SetMethod(m_method);

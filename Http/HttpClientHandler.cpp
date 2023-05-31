@@ -26,12 +26,12 @@ HttpClientHandler::~HttpClientHandler()
     delete m_event;
 }
 
-void HttpClientHandler::HandleRead(DataBuffer *buffer)
+void HttpClientHandler::HandleRead(DataBuffer *)
 {
     m_protocolCodec->ProcessDataInput();
 }
 
-void HttpClientHandler::HandleWrite(DataBuffer *buffer) {
+void HttpClientHandler::HandleWrite(DataBuffer *) {
     if (m_disconnecting) {
         if (m_event->GetOutputBuffer()->GetLength() == 0)
             m_host->DeferDeletion(this);
@@ -40,7 +40,7 @@ void HttpClientHandler::HandleWrite(DataBuffer *buffer) {
     }
 }
 
-void HttpClientHandler::HandleEvent(EventType type)
+void HttpClientHandler::HandleEvent(EventType)
 {
     Disconnect(false);
 }

@@ -118,7 +118,7 @@ RouteMatch MountPoint::GetRouteMatch() const
     return m_routeMatch;
 }
 
-bool MountPoint::HandleException(Request *request, Response *response, HttpException *e)
+bool MountPoint::HandleException(Request *, Response *response, HttpException *e)
 {
     std::map<int, std::string>::const_iterator it;
     std::string path;
@@ -262,7 +262,7 @@ void MountPoint::SetAllowedMethods(int allowedMethods) {
     m_allowedMethods = allowedMethods;
 }
 
-bool MountPoint::TryFile(const std::string &realPath, const URL &u, Request *req, Response *res)
+bool MountPoint::TryFile(const std::string &realPath, const URL &, Request *req, Response *res)
 {
     std::map<std::string, std::string> params;
     struct stat st;

@@ -61,11 +61,11 @@ public:
         }
     }
 
-    void HandleWrite(DataBuffer *buffer)
+    void HandleWrite(DataBuffer *)
     {
     }
 
-    void HandleEvent(EventType type)
+    void HandleEvent(EventType)
     {
         m_bev->Enable(0);
         m_codec->FinalizeResponse();

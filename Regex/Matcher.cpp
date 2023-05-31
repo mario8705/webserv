@@ -22,7 +22,7 @@ Matcher::~Matcher()
 {
 }
 
-bool Matcher::Match(MatchResult &result)
+bool Matcher::Match(MatchResult &)
 {
     size_t pos;
     std::string res;

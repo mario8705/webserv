@@ -37,7 +37,7 @@ bool ServerHost::Bind()
     return (m_listenerEvent != NULL);
 }
 
-void ServerHost::HandleConnection(int fd, struct sockaddr *addr, socklen_t addrlen)
+void ServerHost::HandleConnection(int fd, struct sockaddr *, socklen_t)
 {
     HttpClientHandler *client;
 

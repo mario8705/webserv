@@ -162,7 +162,6 @@ bool Response::CgiPass(Request *req, const std::string &scriptFilename, const st
     CgiManager *manager;
     CgiManager::tEnvMap m;
     tHttpHeadersMap::const_iterator it;
-    size_t i;
     URL url = req->GetUrl();
 
     m["REDIRECT_STATUS"] = "200";
