@@ -54,7 +54,9 @@ ConfigProperty *ConfigProperty::push_config(ConfigProperty *rootProp, const std:
         }
         else if (tokens[i]->getType() == kTokenType_LeftBracket)
         {
-            if (i == 0)
+            if (i == 0 ||
+                    ( tokens[i - 1]->getType() != kTokenType_Ident
+                    && tokens[i - 1]->getType() != kTokenType_String))
                 throw std::runtime_error("Block without keyword attached found");
             property = new ConfigProperty(tmp, true);
             stck.top()->add_body(property);
