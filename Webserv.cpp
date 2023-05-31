@@ -181,7 +181,7 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
             isFileRunnable = true;
         }
         else
-            std::cerr << "Unknown property block " << prop->GetName() << std::endl;
+            throw std::runtime_error("Unknown property block: " + prop->GetName());
     }
 
     int nbValidParams = 0;
