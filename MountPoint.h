@@ -40,6 +40,8 @@ public:
     bool HandleRequest(Request *request, Response *response);
     bool HandleException(Request *request, Response *response, HttpException *e);
 
+    void SetAllowedMethods(int allowedMethods);
+
     void AddNestedMount(MountPoint *mountPoint);
 
     void PopulateCgiParams(Request *request, std::map<std::string, std::string> &paramsOut);
@@ -51,6 +53,7 @@ private:
 
     VirtualHost *m_virtualHost;
     RouteMatch m_routeMatch;
+    int m_allowedMethods;
     std::vector<std::string> m_indexList;
     bool m_autoIndexEnabled;
     std::string m_cgiDelegate;

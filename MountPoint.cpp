@@ -23,6 +23,7 @@ MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const st
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
 {
     m_errorDocuments[404] = "404.html"; /* TODO inject from configuration */
+    m_allowedMethods = 0xFF; /* Allow all methods by default */
 }
 
 MountPoint::~MountPoint()
@@ -79,7 +80,8 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
         throw HttpException(HttpStatusCode::RequestEntityTooLarge);
     }
 
-    if (request->GetMethod() == kHttpMethod_Invalid)
+    if (request->GetMethod() == kHttpMethod_Invalid ||
+            (m_allowedMethods & (int)request->GetMethod()) == 0)
     {
         throw HttpException(HttpStatusCode::MethodNotAllowed);
     }
@@ -273,4 +275,8 @@ MountPoint *MountPoint::GetBestCandidateRoute(Request *req)
         }
     }
     return bestCandidate;
+}
+
+void MountPoint::SetAllowedMethods(int allowedMethods) {
+    m_allowedMethods = allowedMethods;
 }
