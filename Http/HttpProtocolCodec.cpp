@@ -98,7 +98,7 @@ void HttpProtocolCodec::ProcessDataInput()
             if (dispatchRequest) {
                 dispatchRequest = false;
                 DispatchRequest();
-                if (m_asyncHandler)
+                if (m_asyncHandler || !m_bufferEvent->IsReadable())
                     break ;
             }
         }
@@ -263,13 +263,17 @@ void HttpProtocolCodec::DispatchRequest()
     {
         WriteResponseHeader();
         Write(body);
-        FinalizeResponse();
     }
+
+    if (!m_asyncHandler)
+        FinalizeResponse();
 }
 
 void HttpProtocolCodec::FinalizeResponse()
 {
     tHeaderMap::const_iterator it;
+
+    m_bufferEvent->Enable(kEvent_Write);
 
     if (!m_pendingFinalizeResponse)
     {
@@ -292,7 +296,6 @@ void HttpProtocolCodec::FinalizeResponse()
     delete m_asyncHandler;
     m_asyncHandler = NULL;
 
-    m_handler->Disconnect(true); /* TODO this is an ugly fix, but it works :( */
     /*
     if (HttpVersion::kHttpVersion_1_0 == m_httpVersion)
     {
@@ -318,7 +321,7 @@ void HttpProtocolCodec::FinalizeResponse()
     /* Re-enable reads to receive the next request */
     m_bufferEvent->Enable(kEvent_Read);
 
-    printf("Finalized\n");
+    m_handler->Disconnect(true); /* TODO this is an ugly fix, but it works :( */
 }
 
 void HttpProtocolCodec::Write(const void *data, size_t n)
