@@ -47,6 +47,8 @@ public:
 private:
     std::string LocateFile(const URL &url) const;
 
+    MountPoint *GetBestCandidateRoute(Request *req);
+
     VirtualHost *m_virtualHost;
     RouteMatch m_routeMatch;
     std::vector<std::string> m_indexList;

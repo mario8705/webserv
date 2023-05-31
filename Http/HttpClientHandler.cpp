@@ -73,3 +73,7 @@ IEventLoop *HttpClientHandler::GetEventLoop() const
     return m_host->GetEventLoop();
 }
 
+bool HttpClientHandler::IsDisconnecting() const {
+    return m_disconnecting;
+}
+

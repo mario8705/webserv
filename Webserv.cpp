@@ -300,6 +300,14 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
                 hasServerNameDirective = true;
             }
         }
+        else if (prop->GetName() == "root")
+        {
+            if (params.size() != 2)
+            {
+                throw std::runtime_error("root property requires exactly 1 parameter");
+            }
+            virtualHost->GetRootMountPoint()->SetRoot(params[1]);
+        }
         else
         {
             std::cerr << "Warning: Unknown property in server block " << prop->GetName() << std::endl;
