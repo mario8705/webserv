@@ -47,8 +47,8 @@ void HttpProtocolCodec::ProcessDataInput()
                     }
                 } else {
                     if (line.empty()) {
-                        if (m_headers.find("Content-Length") != m_headers.end()) {
-                            std::string contentLength = m_headers["Content-Length"];
+                        if (m_headers.find("content-length") != m_headers.end()) {
+                            std::string contentLength = m_headers["content-length"];
                             size_t i;
 
                             for (i = 0; i < contentLength.size(); ++i) {
