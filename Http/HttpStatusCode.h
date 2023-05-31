@@ -22,6 +22,8 @@ public:
     static HttpStatusCode BadRequest;
     static HttpStatusCode NotFound;
     static HttpStatusCode MethodNotAllowed;
+    static HttpStatusCode LengthRequired;
+    static HttpStatusCode RequestEntityTooLarge;
     static HttpStatusCode RequestURITooLong;
 
 private:

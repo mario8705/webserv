@@ -1,3 +1,9 @@
+<?php
+    if (isset($_FILES) && isset($_FILES['thumbnail'])) {
+        move_uploaded_file($_FILES['thumbnail']['tmp_name'], 'upload.png');
+    }
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -20,22 +26,30 @@
 ?>
             <tr>
                 <td><?= $key ?></td>
-                <td><?= $value ?></td>
+                <td><?= var_dump($value) ?></td>
             </tr>
 <?php
         endforeach;
 ?>
     </table>
+    <h2>Files</h2>
+    <hr>
+    <p>
+        <?php var_dump($_FILES); ?>
+    </p>
 <?php
     else:
 ?>
-        <form action="test-post.php" method="post">
+        <form action="test-post.php" method="post" enctype="multipart/form-data">
             <input type="text" name="name" placeholder="Name">
             <input type="text" name="city" placeholder="City">
+            <input type="file" name="thumbnail">
             <button type="submit">Submit</button>
         </form>
 <?php
     endif;
 ?>
+    <p>Latest upload : </p>
+    <img style="max-width: 100%; height: auto;" src="upload.png" alt="">
 </body>
 </html>

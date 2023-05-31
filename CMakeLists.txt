@@ -36,4 +36,4 @@ add_executable(webserv
         ./string_utils.hpp
         ./MountPoint.cpp
         ./Network/NetworkAddress4.cpp
-        ./Network/ListenerEvent.cpp Config/PropertyIterator.cpp Http/CGIRequestHandler.cpp Http/CGIRequestHandler.h)
+        ./Network/ListenerEvent.cpp Config/PropertyIterator.cpp Http/CGIRequestHandler.cpp Http/CGIRequestHandler.h DirectoryListing.cpp DirectoryListing.h)

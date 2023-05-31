@@ -14,6 +14,8 @@
 #include "../Webserv.h"
 #include "../MimeDatabase.h"
 #include "Request.h"
+#include "../Cgi/CgiManager.hpp"
+#include "CGIRequestHandler.h"
 
 Response::~Response()
 {
@@ -154,9 +156,6 @@ Response::Response(HttpClientHandler *clientHandler)
     SetStatus(HttpStatusCode::Ok);
 }
 
-#include "../Cgi/CgiManager.hpp"
-#include "CGIRequestHandler.h"
-
 bool Response::CgiPass(Request *req, const std::string &scriptFilename, const std::string &path) {
     CgiManager *manager;
     CgiManager::tEnvMap m;
@@ -165,11 +164,11 @@ bool Response::CgiPass(Request *req, const std::string &scriptFilename, const st
     URL url = req->GetUrl();
 
     m["REDIRECT_STATUS"] = "200";
-    m["SCRIPT_FILENAME"] = "./htdocs/wordpress/index.php"; //scriptFilename;
+    m["SCRIPT_FILENAME"] = scriptFilename;
     m["REQUEST_URI"] = url.m_path; /* + query */
     m["QUERY_STRING"] = url.m_query; //url.GetQueryString();
-    m["REQUEST_METHOD"] = "GET";
     m["DOCUMENT_ROOT"] = "./htdocs/wordpress";
+
     //m["DOCUMENT_URI"] = "http://localhost:8080" + req->GetRawPath();
    // m["SCRIPT_NAME"] = "i like trains";
 
@@ -183,6 +182,7 @@ bool Response::CgiPass(Request *req, const std::string &scriptFilename, const st
     }
     SetAsyncHandler(new CGIRequestHandler(
             m_clientHandler->GetEventLoop(),
+            req,
             this,
             manager
             ));

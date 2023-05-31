@@ -10,17 +10,18 @@ class CgiManager;
 class BufferEvent;
 class IEventLoop;
 class Response;
-
+class Request;
 class PipeToBufferEvent;
 class BufferEventToPipe;
 
 class CGIRequestHandler : public IAsyncRequestHandler
 {
 public:
-    explicit CGIRequestHandler(IEventLoop *eventLoop, Response *response, CgiManager *manager);
+    explicit CGIRequestHandler(IEventLoop *eventLoop, Request *request, Response *response, CgiManager *manager);
     ~CGIRequestHandler();
 
     void OnOutputDrained();
+    void OnDataIncoming(DataBuffer *in);
 
 private:
     CgiManager *m_manager;

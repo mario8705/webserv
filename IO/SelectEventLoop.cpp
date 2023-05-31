@@ -9,6 +9,8 @@
 #include "IOEvent.h"
 #include <vector>
 #include <iostream>
+#include <errno.h>
+#include <cstdio>
 
 SelectEventLoop::SelectEventLoop()
 {
