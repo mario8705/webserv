@@ -26,12 +26,18 @@ public:
     MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path);
     ~MountPoint();
 
+    RouteMatch GetRouteMatch() const;
+
     void SetRoot(const std::string &root);
     std::string GetRoot() const;
 
+    void SetAutoIndex(bool enabled);
+    void SetCGIDelegate(const std::string &cgiPath);
+    void SetIndexList(const std::vector<std::string> &indexList);
+
     bool Matches(const std::string &path) const;
 
-    void HandleRequest(Request *request, Response *response);
+    bool HandleRequest(Request *request, Response *response);
     bool HandleException(Request *request, Response *response, HttpException *e);
 
     void AddNestedMount(MountPoint *mountPoint);
@@ -43,6 +49,9 @@ private:
 
     VirtualHost *m_virtualHost;
     RouteMatch m_routeMatch;
+    std::vector<std::string> m_indexList;
+    bool m_autoIndexEnabled;
+    std::string m_cgiDelegate;
     std::map<int, std::string> m_errorDocuments;
     std::string m_path;
     std::string m_root;

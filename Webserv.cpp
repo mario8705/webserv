@@ -315,8 +315,43 @@ const std::map<std::string, std::string> &Webserv::GetRootCgiParams() const
 void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *virtualHost)
 {
     MountPoint *mountPoint;
+    RouteMatch routeMatch;
+    std::string path;
+    std::string root;
+    std::vector<std::string> indexList;
+    std::string cgiPass;
+    bool autoIndex = false;
     PropertyIterator it = locationBlock->FindAllProps();
     ConfigProperty *prop;
+    size_t i;
+
+    const std::vector<std::string> &locationParams = locationBlock->getParams();
+
+    if (locationParams.size() < 2)
+    {
+        throw std::runtime_error("Location block requires at least one parameters");
+    }
+
+    if (locationParams.size() > 2 && locationParams[1] != "~")
+    {
+        throw std::runtime_error("Unknown modifier in route name");
+    }
+
+    if (locationParams[1] == "~" && locationParams.size() == 2)
+    {
+        throw std::runtime_error("Route name missing in location block");
+    }
+
+    if (locationParams[1] == "~")
+    {
+        routeMatch = kRouteMatch_Regex;
+        path = locationParams[2];
+    }
+    else
+    {
+        routeMatch = kRouteMatch_StartsWith;
+        path = locationParams[1];
+    }
 
     while ((prop = it.Next()) != NULL)
     {
@@ -324,13 +359,53 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
 
         if (prop->GetName() == "root")
         {
-            if (params.size() < 2)
+            if (params.size() != 2)
             {
-                std::cerr << "root property requires at least 1 parameter" << std::endl;
+                std::cerr << "root property requires exactly 1 parameter" << std::endl;
             }
             else
             {
-
+                root = params[1];
+            }
+        }
+        else if (prop->GetName() == "index")
+        {
+            if (params.size() < 2)
+            {
+                std::cerr << "index property requires at least 1 parameter" << std::endl;
+            }
+            else
+            {
+                for (i = 1; i < params.size(); ++i)
+                {
+                    indexList.push_back(params[i]);
+                }
+            }
+        }
+        else if (prop->GetName() == "autoindex")
+        {
+            if (params.size() != 2)
+            {
+                std::cerr << "autoindex property requires exactly 1 parameter" << std::endl;
+            }
+            else if (params[1] != "on" && params[1] != "off")
+            {
+                std::cerr << "parameter of autoindex must be either on or off" << std::endl;
+            }
+            else
+            {
+                autoIndex = (params[1] == "on");
+            }
+        }
+        else if (prop->GetName() == "cgi_pass")
+        {
+            if (params.size() != 2)
+            {
+                std::cerr << "cgi_pass requires exactly one parameter" << std::endl;
+            }
+            else
+            {
+                cgiPass = params[1];
             }
         }
         else
@@ -338,6 +413,16 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
             std::cerr << "Warning: unknown property in location block " << prop->GetName() << std::endl;
         }
     }
-    //mountPoint = new MountPoint(...);
-    //virtualHost->A
+
+    if (root.empty() && virtualHost->GetRootMountPoint()->GetRoot().empty())
+    {
+        throw std::runtime_error("Empty root in route");
+    }
+
+    mountPoint = new MountPoint(virtualHost, routeMatch, path);
+    mountPoint->SetAutoIndex(autoIndex);
+    mountPoint->SetRoot(root);
+    mountPoint->SetCGIDelegate(cgiPass);
+    mountPoint->SetIndexList(indexList);
+    virtualHost->GetRootMountPoint()->AddNestedMount(mountPoint);
 }

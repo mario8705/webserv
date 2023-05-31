@@ -23,7 +23,7 @@ public:
     void HandleWrite(DataBuffer *buffer);
     void HandleEvent(EventType type);
 
-    void HandleRequest(Request *request, Response *response);
+    bool HandleRequest(Request *request, Response *response);
 
     void Disconnect(bool flush);
 
