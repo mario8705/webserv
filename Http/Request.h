@@ -5,6 +5,7 @@
 #ifndef WEBSERV_REQUEST_H
 #define WEBSERV_REQUEST_H
 #include <string>
+#include <cstdlib>
 #include <map>
 #include "HttpMethod.h"
 #include "HttpVersion.h"
