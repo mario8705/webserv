@@ -58,7 +58,7 @@ public:
         return _params.size();
     }
 
-    static ConfigProperty *push_config(const std::vector<Token *> &tokens);
+    static ConfigProperty *push_config(ConfigProperty *rootProp, const std::vector<Token *> &tokens);
 
 private:
     std::vector<std::string> _params;
