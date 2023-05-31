@@ -36,10 +36,9 @@ MountPoint::~MountPoint()
 
 bool MountPoint::Matches(const std::string &path) const
 {
-    switch (m_routeMatch)
-    {
-    case kRouteMatch_Exact:
-        break ;
+    switch (m_routeMatch) {
+        case kRouteMatch_Exact:
+            break;
 
         case kRouteMatch_Regex:
             return Pattern::Matches(m_path, path);
@@ -47,8 +46,8 @@ bool MountPoint::Matches(const std::string &path) const
         case kRouteMatch_StartsWith:
             return !path.compare(0, m_path.size(), m_path);
 
-    default:
-        break;
+        default:
+            break;
     }
     return false;
 }

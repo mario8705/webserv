@@ -227,7 +227,7 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
     PropertyIterator propsIterator = serverBlock->FindAllProps();
     PropertyIterator blocksIterator = serverBlock->FindAllBlocks();
     ConfigProperty *prop;
-    size_t i;
+    size_t i, j;
 
     bool hasListenDirective = false;
     bool hasServerNameDirective = false;
@@ -237,6 +237,8 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
 
     while ((prop = propsIterator.Next()) != NULL)
     {
+        const std::vector<std::string> &params = prop->getParams();
+
         /* TODO move this in MountPoint (location block) */
         if (prop->GetName() == "index")
         {
@@ -251,34 +253,28 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
         }
         else if (prop->GetName() == "listen")
         {
-            if (prop->getParams().size() < 2)
-            {
-                std::cerr << "Warning: listen property requires at least 1 parameter" << std::endl;
-            }
-            else
-            {
-                std::string port = prop->getParams()[1];
+            for (i = 1; i < params.size(); ++i) {
+                std::string port = prop->getParams()[i];
                 int portNum;
 
-                for (i = 0; i < port.size(); ++i)
-                {
-                    if (!std::isdigit(port[i]) || i > 5)
-                    {
+                for (j = 0; j < port.size(); ++j) {
+                    if (!std::isdigit(port[j]) || j > 5) {
                         throw std::runtime_error("Error in listen directive: Port format is invalid");
                     }
                 }
                 portNum = std::atoi(port.c_str());
-                if (portNum > 65535)
-                {
+                if (portNum > 65535) {
                     throw std::runtime_error("Error in listen directive: Port format must be in range [0-65535]");
                 }
-                virtualHost->AddListenAddress(NetworkAddress4((uint16_t)portNum));
+                virtualHost->AddListenAddress(NetworkAddress4((uint16_t) portNum));
                 hasListenDirective = true;
+            }
+            if (i < 2) {
+                std::cerr << "Warning: listen property requires at least 1 parameter" << std::endl;
             }
         }
         else if (prop->GetName() == "server_name")
         {
-            const std::vector<std::string> &params = prop->getParams();
             if (params.size() < 2)
             {
                 throw std::runtime_error("server_name directive requires at least 1 parameter");
@@ -318,5 +314,30 @@ const std::map<std::string, std::string> &Webserv::GetRootCgiParams() const
 
 void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *virtualHost)
 {
-    std::cout << "Location block ! " << std::endl;
+    MountPoint *mountPoint;
+    PropertyIterator it = locationBlock->FindAllProps();
+    ConfigProperty *prop;
+
+    while ((prop = it.Next()) != NULL)
+    {
+        const std::vector<std::string> &params = prop->getParams();
+
+        if (prop->GetName() == "root")
+        {
+            if (params.size() < 2)
+            {
+                std::cerr << "root property requires at least 1 parameter" << std::endl;
+            }
+            else
+            {
+
+            }
+        }
+        else
+        {
+            std::cerr << "Warning: unknown property in location block " << prop->GetName() << std::endl;
+        }
+    }
+    //mountPoint = new MountPoint(...);
+    //virtualHost->A
 }
