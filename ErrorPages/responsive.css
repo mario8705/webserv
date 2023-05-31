@@ -1,0 +1,27 @@
+table{
+border-collapse: collapse;
+    width: 100vw;
+    height: 100vh;
+}
+
+body{
+    margin: 0px;
+}
+
+#tr0{
+    collapse: collapse;
+    border: #000000 solid 1px ;
+}
+
+#cell0{
+    text-align: left;
+    background-color: #87bb0b;
+    width: 50%;
+    border-right: grey;
+}
+
+#cell1{
+    text-align: left;
+    background-color: #de0808;
+    width: 50%
+}
