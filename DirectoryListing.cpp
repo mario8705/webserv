@@ -3,10 +3,42 @@
 //
 
 #include "DirectoryListing.h"
+#include <sys/stat.h>
 
 DirectoryListing::DirectoryListing(DIR *dirp, const std::string &baseUrl)
     : m_dirp(dirp), m_baseUrl(baseUrl)
 {
+}
+
+static void WriteFileSize(std::ostream &out, const std::string &path)
+{
+    struct stat st;
+    off_t size;
+    std::string suffix;
+
+    if (stat(path.c_str(), &st) < 0)
+    {
+        out << "-";
+        return ;
+    }
+    size = st.st_size;
+    suffix = "b";
+    if (size > 1024)
+    {
+        size /= 1024;
+        suffix = "K";
+    }
+    if (size > 1024)
+    {
+        size /= 1024;
+        suffix = "M";
+    }
+    if (size > 1024)
+    {
+        suffix = "G";
+        size /= 1024;
+    }
+    out << size << suffix;
 }
 
 void DirectoryListing::Write(std::ostream &out)
@@ -115,7 +147,9 @@ void DirectoryListing::Write(std::ostream &out)
                "                <td>\n"
                "                    <a href=\"" << href << "\">"
                << dent->d_name << "</a></td>\n"
-               "                <td>3M</td>\n"
+                                  "                <td>";
+        WriteFileSize(out, "/etc/resolve.conf");
+        out << "</td>\n"
                "            </tr>\n";
     }
 

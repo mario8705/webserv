@@ -77,6 +77,10 @@ ConfigProperty *ConfigProperty::push_config(ConfigProperty *rootProp, const std:
                 throw std::runtime_error("Empty config block");
         }
     }
+    if (stck.size() != 1)
+    {
+        throw std::runtime_error("Unclosed brackets");
+    }
     return rootProp;
 }
 
