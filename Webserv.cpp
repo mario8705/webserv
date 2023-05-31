@@ -264,6 +264,30 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
 
             }
         }
+        else if (prop->GetName() == "error_page")
+        {
+            if (params.size() < 3)
+            {
+                throw std::runtime_error("error_page property requires at least 2 parameters");
+            }
+            for (i = 1; i < params.size() - 1; i++)
+            {
+                std::string code = params[i];
+                int nCode;
+
+                for (j = 0; j < code.size(); ++j)
+                {
+                    if (!std::isdigit(code[i]))
+                        break ;
+                }
+
+                nCode = std::atoi(code.c_str());
+                if (j != code.size() || j > 3 || nCode < 200 || nCode >= 600)
+                    throw std::runtime_error("Invalid HTTP status code " + code);
+
+                virtualHost->GetRootMountPoint()->SetErrorPage(nCode, params[params.size() - 1]);
+            }
+        }
         else if (prop->GetName() == "listen")
         {
             for (i = 1; i < params.size(); ++i) {
