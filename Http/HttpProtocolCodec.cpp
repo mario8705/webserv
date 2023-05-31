@@ -41,7 +41,6 @@ void HttpProtocolCodec::ProcessDataInput()
     std::string line;
     bool dispatchRequest;
 
-    printf("Async Handler %p:%p\n", this, m_asyncHandler);
     if (!m_asyncHandler) {
         dispatchRequest = false;
         while (m_inputBuffer->Readln(line)) {
@@ -65,6 +64,7 @@ void HttpProtocolCodec::ProcessDataInput()
                                 }
                             }
 
+                            m_bodyLength = std::atoi(contentLength.c_str());
                             m_bufferEvent->Enable(kEvent_Read | kEvent_Write);
                         }
                         else
@@ -292,6 +292,8 @@ void HttpProtocolCodec::FinalizeResponse()
     delete m_asyncHandler;
     m_asyncHandler = NULL;
 
+    m_handler->Disconnect(true); /* TODO this is an ugly fix, but it works :( */
+    /*
     if (HttpVersion::kHttpVersion_1_0 == m_httpVersion)
     {
         m_handler->Disconnect(true);
@@ -306,7 +308,7 @@ void HttpProtocolCodec::FinalizeResponse()
             m_handler->Disconnect(true);
             return ;
         }
-    }
+    }*/
 
     m_headers.clear();
     m_requestHeaderParsed = false;
