@@ -115,7 +115,7 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
                     response->GetBodyBuffer()->PutString(ss.str());
                     closedir(dirp);
                 }
-                return false;
+                return true;
             }
             else
             {
