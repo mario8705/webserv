@@ -194,8 +194,8 @@ bool Response::CgiPass(Request *req, const std::string &scriptFilename, const st
 bool Response::SendAutoIndex(const std::string &realPath, const std::string &urlPath)
 {
     DIR *dirp;
-    AddHeader("Content-Type", "text/html; charset=utf-8");
 
+    AddHeader("Content-Type", "text/html; charset=utf-8");
     if (NULL != (dirp = opendir(realPath.c_str()))) {
         DirectoryListing dir(dirp, urlPath, realPath);
         std::stringstream ss;

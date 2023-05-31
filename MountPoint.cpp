@@ -15,7 +15,6 @@
 #include "Http/HttpProtocolCodec.h"
 #include "string_utils.hpp"
 #include "Http/HttpStatusCode.h"
-#include "DirectoryListing.h"
 #include "IO/DataBuffer.h"
 #include <dirent.h>
 
@@ -103,7 +102,7 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
                         return true;
                 }
             }
-            if (!m_autoIndexEnabled || !response->SendAutoIndex(path, url.m_path))
+            if (!m_autoIndexEnabled || !response->SendAutoIndex(path, request->GetRawPath()))
                 throw HttpException(HttpStatusCode::Forbidden);
         }
         else
