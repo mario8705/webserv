@@ -27,7 +27,7 @@ public:
         return m_bindAddresses;
     }
 
-    void HandleRequest(Request *request, Response *response);
+    bool HandleRequest(Request *request, Response *response);
 
     MountPoint *GetRootMountPoint() const
     {
@@ -39,11 +39,12 @@ public:
         m_serverNames.push_back(serverName);
     }
 
+    void AddMountPoint(MountPoint *mountPoint);
+
     const tServerNameList &GetServerNames() const;
 
     tServerNameList m_serverNames;
     std::vector<NetworkAddress4> m_bindAddresses;
-    std::vector<MountPoint *> m_mountPoints;
 
 private:
     void DispatchRequest(MountPoint *mountPoint, Request *request, Response *response);

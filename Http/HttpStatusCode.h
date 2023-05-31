@@ -20,6 +20,7 @@ public:
 
     /* 4xx */
     static HttpStatusCode BadRequest;
+    static HttpStatusCode Forbidden;
     static HttpStatusCode NotFound;
     static HttpStatusCode MethodNotAllowed;
     static HttpStatusCode LengthRequired;

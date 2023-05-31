@@ -96,7 +96,7 @@ void ServerHost::AddVirtualHost(VirtualHost *virtualHost)
     }
 }
 
-void ServerHost::HandleRequest(Request *request, Response *response)
+bool ServerHost::HandleRequest(Request *request, Response *response)
 {
     const Request::tHttpHeaders &headers = request->GetHeaders();
     Request::tHttpHeaders::const_iterator it;
@@ -108,16 +108,13 @@ void ServerHost::HandleRequest(Request *request, Response *response)
         host = it->second;
     virtualHost = MatchVirtualHost(host);
 
-    if (NULL != virtualHost)
-    {
-        virtualHost->HandleRequest(request, response);
-    }
-    else
+    if (NULL == virtualHost || !virtualHost->HandleRequest(request, response))
     {
         /* TODO throw a 404 */
         response->SetStatus(HttpStatusCode::NotFound);
       //  response->GetOutputBuffer()->PutString("<center><h1>404 Not Found :(</h1></center>");
     }
+    return true;
 }
 
 VirtualHost *ServerHost::MatchVirtualHost(std::string host)

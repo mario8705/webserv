@@ -24,6 +24,8 @@ const char *HttpStatusCode::GetStatusMessage() const
 }
 
 HttpStatusCode HttpStatusCode::Ok(200, "Ok");
+
+HttpStatusCode HttpStatusCode::Forbidden(403, "Forbidden");
 HttpStatusCode HttpStatusCode::NotFound(404, "Not Found");
 
 HttpStatusCode HttpStatusCode::BadRequest(400, "Bad Request");

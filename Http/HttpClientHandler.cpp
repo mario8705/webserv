@@ -53,9 +53,9 @@ void HttpClientHandler::Disconnect(bool flush) {
     }
 }
 
-void HttpClientHandler::HandleRequest(Request *request, Response *response)
+bool HttpClientHandler::HandleRequest(Request *request, Response *response)
 {
-    m_host->HandleRequest(request, response);
+    return m_host->HandleRequest(request, response);
 }
 
 BufferEvent *HttpClientHandler::GetBufferEvent() const
