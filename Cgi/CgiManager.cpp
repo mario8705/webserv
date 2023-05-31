@@ -7,6 +7,8 @@
 #include <vector>
 #include <sstream>
 #include <fcntl.h>
+#include <errno.h>
+#include <cstring>
 
 CgiManager::CgiManager(const std::string &pathToCgi, const std::map<std::string, std::string> &envMap)
     : m_path(pathToCgi)
@@ -68,8 +70,8 @@ pid_t CgiManager::SpawnSubProcess()
             exit(1);
         close(miso[1]);
         close(mosi[0]);
-        SpawnSubProcess(m_path.c_str(), args, m_envList);
-        std::cerr << "CGi failed to execute" << std::endl;
+        SpawnSubProcess(m_path, args, m_envList);
+        std::cerr << "CGI failed to execute: " << strerror(errno) << std::endl;
         exit(1);
     }
     close(miso[1]);

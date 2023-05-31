@@ -50,6 +50,7 @@ public:
 
                     key = line.substr(0, sep);
                     value = line.substr(sep + 1);
+                    utils::to_lower(value);
                     m_codec->AddHeader(utils::trim(key), utils::trim(value));
                 }
             }

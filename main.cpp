@@ -15,7 +15,6 @@ static void collect_child_status(int)
 
     while ((p = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        std::cout << "Child died: " << p << std::endl;
     }
 }
 
