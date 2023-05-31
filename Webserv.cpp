@@ -140,6 +140,17 @@ IEventLoop *Webserv::GetEventLoop() const
     return m_eventLoop;
 }
 
+static void cleanTokens(std::vector<Token *> &tokens)
+{
+    if (!tokens.empty())
+    {
+        std::vector<Token *>::iterator it = tokens.begin();
+        for (;  it != tokens.end() ; ++it) {
+            delete *it;
+        }
+    }
+}
+
 bool Webserv::LoadConfig(const std::string &path)
 {
     std::vector<Token *> tokens;
@@ -153,10 +164,12 @@ bool Webserv::LoadConfig(const std::string &path)
     try {
         ConfigProperty::push_config(rootProperty, tokens);
         ParseConfig(rootProperty);
+        cleanTokens(tokens);
     }
     catch (std::exception &exception)
     {
         std::cerr << "Error:Bad configuration file (" << exception.what() << ")" << std::endl;
+        cleanTokens(tokens);
         delete rootProperty;
         return false;
     }
