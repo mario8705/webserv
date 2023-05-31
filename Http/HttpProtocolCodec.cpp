@@ -13,6 +13,7 @@
 #include "../string_utils.hpp"
 #include "HttpException.h"
 #include <stdio.h>
+#include "HttpRegistry.h"
 
 HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output)
         : m_handler(handler), m_inputBuffer(input), m_outputBuffer(output), m_bufferEvent(handler->GetBufferEvent())
@@ -21,14 +22,6 @@ HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *inp
     m_asyncHandler = NULL;
     m_headersSent = false;
     m_pendingFinalizeResponse = false;
-
-    m_methods.insert(std::make_pair("GET", kHttpMethod_Get));
-    m_methods.insert(std::make_pair("POST", kHttpMethod_Post));
-    m_methods.insert(std::make_pair("PUT", kHttpMethod_Put));
-    m_methods.insert(std::make_pair("PATCH", kHttpMethod_Patch));
-    m_methods.insert(std::make_pair("DELETE", kHttpMethod_Delete));
-    m_methods.insert(std::make_pair("HEAD", kHttpMethod_Head));
-    m_methods.insert(std::make_pair("OPTIONS", kHttpMethod_Options));
 }
 
 HttpProtocolCodec::~HttpProtocolCodec()
@@ -162,15 +155,8 @@ void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::s
     {
         throw HttpException(HttpStatusCode::BadRequest);
     }
-
     m_httpVersion = HttpVersion::Min(HttpVersion(1, 1), m_httpVersion);
-
-    tHttpMethodsMap::const_iterator methodsIt = m_methods.find(method);
-    if (methodsIt == m_methods.end())
-        m_method = kHttpMethod_Invalid;
-    else
-        m_method = methodsIt->second;
-
+    m_method = HttpRegistry::GetMethodByName(method);
     m_rawPath = rawPath;
     utils::trim(m_rawPath);
 }

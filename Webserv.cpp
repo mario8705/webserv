@@ -22,6 +22,7 @@
 #include <iostream>
 #include <string>
 #include "MimeDatabase.h"
+#include "Http/HttpRegistry.h"
 
 Webserv *Webserv::s_instance = NULL;
 
@@ -345,10 +346,12 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
     bool autoIndex = false;
     PropertyIterator it = locationBlock->FindAllProps();
     ConfigProperty *prop;
+    int allowedMethods;
     size_t i;
 
     const std::vector<std::string> &locationParams = locationBlock->getParams();
 
+    allowedMethods = 0xFF;
     if (locationParams.size() < 2)
     {
         throw std::runtime_error("Location block requires at least one parameters");
@@ -404,6 +407,26 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
                 }
             }
         }
+        else if (prop->GetName() == "allow_methods")
+        {
+            HttpMethod method;
+
+            if (params.size() < 2)
+            {
+                throw std::runtime_error("The allow_methods property requires at least one parameter");
+            }
+            allowedMethods = 0;
+            for (i = 1; i < params.size(); ++i)
+            {
+                method = HttpRegistry::GetMethodByName(params[i]);
+                if (kHttpMethod_Invalid == method)
+                {
+                    throw std::runtime_error("Unknown HTTP method " + params[i]);
+                }
+                allowedMethods |= (int)method;
+            }
+
+        }
         else if (prop->GetName() == "autoindex")
         {
             if (params.size() != 2)
@@ -444,6 +467,7 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
     mountPoint = new MountPoint(virtualHost, routeMatch, path);
     mountPoint->SetAutoIndex(autoIndex);
     mountPoint->SetRoot(root);
+    mountPoint->SetAllowedMethods(allowedMethods);
     mountPoint->SetCGIDelegate(cgiPass);
     mountPoint->SetIndexList(indexList);
     virtualHost->GetRootMountPoint()->AddNestedMount(mountPoint);
