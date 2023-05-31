@@ -47,6 +47,8 @@ public:
     bool SendFile(const std::string &path);
     bool SendFile(const std::string &path, size_t length);
 
+    bool SendAutoIndex(const std::string &realPath, const std::string &urlPath);
+
     bool CgiPass(Request *req, const std::string &scriptFilename, const std::string &path);
 
     HttpProtocolCodec *GetHttpCodec() const;

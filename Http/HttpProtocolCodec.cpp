@@ -237,6 +237,8 @@ void HttpProtocolCodec::DispatchRequest()
         m_responseHeaders["Content-Length"] = utils::to_string(response.GetContentLength());
     }
 
+    m_responseHeaders["Connection"] = "close";
+
     m_responseStatus = response.GetStatusCode();
     m_responseMessage = response.GetStatusMessage();
 

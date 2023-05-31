@@ -13,6 +13,7 @@ URL::URL()
 URL::URL(std::string path)
     : m_path(path)
 {
+    SanitizeURL();
 }
 
 URL::~URL()
@@ -122,4 +123,24 @@ std::string URL::ToURI() const {
 
     ss << m_protocol << "//" << m_host << m_path << m_query;
     return ss.str();
+}
+
+void URL::Append(const std::string &path)
+{
+    m_path.append("/");
+    m_path.insert(m_path.end(), path.begin(), path.end());
+    SanitizeURL();
+}
+
+void URL::SanitizeURL() {
+    std::string newPath;
+    size_t i;
+
+    for (i = 0; i < m_path.size(); ++i)
+    {
+        if (i > 0 && m_path[i] == '/' && m_path[i - 1] == '/')
+            continue ;
+        newPath.append(m_path.c_str() + i, 1);
+    }
+    m_path = newPath;
 }

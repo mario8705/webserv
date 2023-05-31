@@ -16,6 +16,8 @@
 #include "Request.h"
 #include "../Cgi/CgiManager.hpp"
 #include "CGIRequestHandler.h"
+#include <dirent.h>
+#include "../DirectoryListing.h"
 
 Response::~Response()
 {
@@ -187,4 +189,23 @@ bool Response::CgiPass(Request *req, const std::string &scriptFilename, const st
             manager
             ));
     return true;
+}
+
+bool Response::SendAutoIndex(const std::string &realPath, const std::string &urlPath)
+{
+    DIR *dirp;
+    AddHeader("Content-Type", "text/html; charset=utf-8");
+
+    if (NULL != (dirp = opendir(realPath.c_str()))) {
+        DirectoryListing dir(dirp, urlPath, realPath);
+        std::stringstream ss;
+
+        dir.Write(ss);
+
+        m_body->PutString(ss.str());
+        closedir(dirp);
+
+        return true;
+    }
+    return false;
 }
