@@ -205,9 +205,7 @@ size_t Pattern::DecodeOccurenceModifier(RegexElement &element,
         {
             for (i = head + 1; i < pos; ++i)
             {
-           //     printf("Occurence %c\n", regex[i]); /* TODO */
-                //if (!std::isdigit(regex[i]))
-                  //  break ;
+                /* For the next version... */
             }
         }
     }

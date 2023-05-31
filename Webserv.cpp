@@ -106,7 +106,7 @@ void Webserv::Run() {
         if (m_eventLoop->LoopOnce())
             break ;
     }
-    /* TODO printf("Shutting down...\n"); */
+    std::cerr << "Shutting down..." << std::endl;
 }
 
 ServerHost *Webserv::GetServerHostByAddr(const NetworkAddress4 &addr) const

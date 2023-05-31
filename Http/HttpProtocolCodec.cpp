@@ -4,15 +4,15 @@
 
 #include "HttpProtocolCodec.h"
 #include <sstream>
-#include "HttpClientHandler.h"
+#include <iostream>
 #include "../IO/DataBuffer.h"
-#include "Request.h"
-#include "Response.h"
 #include "../IO/BufferEvent.h"
-#include "AsyncRequestHandler.h"
 #include "../string_utils.hpp"
+#include "Request.h"
+#include "HttpClientHandler.h"
+#include "Response.h"
+#include "AsyncRequestHandler.h"
 #include "HttpException.h"
-#include <stdio.h>
 #include "HttpRegistry.h"
 
 HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output)
@@ -95,12 +95,6 @@ void HttpProtocolCodec::ProcessDataInput()
                     break ;
             }
         }
-        if (m_inputBuffer->GetLength() >= m_inputBuffer->GetReadHighWatermark()) {
-            /* TODO handle veryyyy looong requests */
-            // printf("Buffer full and no line could be read\n");
-            //m_event->GetOutputBuffer()->PutString("Buffer full");
-            // Disconnect(true);
-        }
     }
 
     if (m_asyncHandler)
@@ -144,7 +138,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
     {
         rawPath = line.substr(methodSep + 1);
     }
-    printf("[%s] %s\n", method.c_str(), rawPath.c_str());
+    std::cerr << "[" << method << "] " << rawPath << std::endl;
     SetRequestHeader(method, rawPath, httpVersion);
 }
 
@@ -223,7 +217,6 @@ void HttpProtocolCodec::DispatchRequest()
     }
     catch (...)
     {
-        printf("Unexpected error\n");
     }
 
     m_responseHeaders.swap(response.GetHeaders());
@@ -243,7 +236,6 @@ void HttpProtocolCodec::DispatchRequest()
     m_responseMessage = response.GetStatusMessage();
 
     m_asyncHandler = response.GetAsyncHandler();
-    printf("Async Handler oàoà %p:%p\n", this, m_asyncHandler);
     m_chunked = response.IsChunked();
 
     body = response.GetBodyBuffer();

@@ -3,6 +3,7 @@
 //
 
 #include "ServerHost.h"
+#include <iostream>
 #include <unistd.h>
 #include "IO/DataBuffer.h"
 #include "IO/EventLoop.h"
@@ -14,7 +15,6 @@
 #include "string_utils.hpp"
 #include "Network/ListenerEvent.h"
 #include "Webserv.h"
-#include <stdio.h>
 
 ServerHost::ServerHost(Webserv *webserv, NetworkAddress4 bindAddress)
     : m_webserv(webserv), m_eventLoop(webserv->GetEventLoop()), m_bindAddress(bindAddress)
@@ -32,8 +32,8 @@ bool ServerHost::Bind()
     if (m_listenerEvent)
         delete m_listenerEvent;
     m_listenerEvent = ListenerEvent::CreateAndBind(m_eventLoop, this, m_bindAddress, 10);
-    if (m_listenerEvent) /* TODO replace with logger */
-        printf("Listening on :%d\n", m_bindAddress.GetPort());
+    if (m_listenerEvent)
+        std::cout << "Listening on: *:" << m_bindAddress.GetPort() << std::endl;
     return (m_listenerEvent != NULL);
 }
 

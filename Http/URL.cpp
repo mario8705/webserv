@@ -94,7 +94,6 @@ std::string URL::Decode(const std::string &s) {
         }
         res.insert(res.end(), static_cast<char>(ch));
     }
- //   printf("Decoded '%s' into '%s'\n", s.c_str(), res.c_str());
     return res;
 }
 
