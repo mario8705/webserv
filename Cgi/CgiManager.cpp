@@ -114,8 +114,6 @@ int CgiManager::SpawnSubProcess(const std::string &path, const std::vector<std::
         else
             envp[i] = NULL;
     }
-    if (open(argv[0], O_CLOEXEC) < 0) std::cerr << "Executable not found" << std::endl;
-    std::cerr << "path=" << path << "; argv=" << const_cast<char * const *>(argv)[0] << std::endl;
     return execve(path.c_str(),
                   const_cast<char * const *>(argv),
                   const_cast<char * const *>(envp));
