@@ -81,9 +81,11 @@ ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
             {
                 stck.top()->add_body(new ConfigProperty(tmp, false));
                 tmp.clear();
-            }
+            } else
+                throw std::runtime_error("Empty config block");
         }
     }
+
     return stck.top();
 }
 
