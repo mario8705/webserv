@@ -54,7 +54,11 @@ void HttpProtocolCodec::ProcessDataInput()
                     }
                 } else {
                     if (line.empty()) {
-                        if (m_method == kHttpMethod_Post ||
+                        if (m_method == kHttpMethod_Get)
+                        {
+                            if (m_headers.find("Content-Length") != m_headers.end())
+                                throw HttpException(HttpStatusCode::BadRequest);
+                        } else if (m_method == kHttpMethod_Post ||
                             m_method == kHttpMethod_Patch ||
                             m_method == kHttpMethod_Put) {
                             if (m_headers.find("Content-Length") == m_headers.end()) {
