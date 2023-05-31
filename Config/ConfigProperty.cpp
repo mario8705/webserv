@@ -38,13 +38,13 @@ const std::vector<ConfigProperty *> &ConfigProperty::getBody() const
     return (_body);
 }
 
-ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
+ConfigProperty *ConfigProperty::push_config(ConfigProperty *rootProp, const std::vector<Token *> &tokens)
 {
     std::vector<std::string> tmp;
     std::stack<ConfigProperty *> stck;
     ConfigProperty *property;
 
-    stck.push(new ConfigProperty);
+    stck.push(rootProp);
     for (size_t i = 0; i < tokens.size(); i++)
     {
         if (tokens[i]->getType() == kTokenType_Ident ||
@@ -55,15 +55,7 @@ ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
         else if (tokens[i]->getType() == kTokenType_LeftBracket)
         {
             property = new ConfigProperty(tmp, true);
-            if (!stck.empty())
-            {
-                stck.top()->add_body(property);
-            }
-            else
-            {
-                std::cerr << "Stack error" << std::endl;
-                throw std::runtime_error("Stack Fatal error ");
-            }
+            stck.top()->add_body(property);
             stck.push(property);
             tmp.clear();
         }
@@ -85,8 +77,7 @@ ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
                 throw std::runtime_error("Empty config block");
         }
     }
-
-    return stck.top();
+    return rootProp;
 }
 
 const std::string &ConfigProperty::GetName() const

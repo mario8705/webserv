@@ -148,8 +148,9 @@ bool Webserv::LoadConfig(const std::string &path)
     {
         return false;
     }
+    rootProperty = new ConfigProperty;
     try {
-        rootProperty = ConfigProperty::push_config(tokens);
+        ConfigProperty::push_config(rootProperty, tokens);
         ParseConfig(rootProperty);
     }
     catch (std::exception &exception)
