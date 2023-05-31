@@ -20,7 +20,7 @@ public:
     static BufferChain *Allocate(size_t capacity);
     static void ReleasePool();
 
-    static const int kMaxPooledChains;
+    static const size_t kMaxPooledChains;
 
 //private:
     char *m_buffer;

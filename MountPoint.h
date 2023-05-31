@@ -40,23 +40,35 @@ public:
     bool HandleRequest(Request *request, Response *response);
     bool HandleException(Request *request, Response *response, HttpException *e);
 
+    bool Resolve(Request *req, MountPoint *&pMountPoint, std::string &realPath) const;
+
+    void SetAllowedMethods(int allowedMethods);
+
+    void SetErrorPage(int nCode, const std::string &path);
+
     void AddNestedMount(MountPoint *mountPoint);
 
     void PopulateCgiParams(Request *request, std::map<std::string, std::string> &paramsOut);
 
+    void SetMaxBodySize(size_t maxBodySize);
+    size_t GetMaxBodySize() const;
+
 private:
     std::string LocateFile(const URL &url) const;
 
-    MountPoint *GetBestCandidateRoute(Request *req);
+    bool TryFile(const std::string &realPath, const URL &u, Request *req, Response *res);
+    MountPoint *GetBestCandidateRoute(const std::string &path) const;
 
     VirtualHost *m_virtualHost;
     RouteMatch m_routeMatch;
+    int m_allowedMethods;
     std::vector<std::string> m_indexList;
     bool m_autoIndexEnabled;
     std::string m_cgiDelegate;
     std::map<int, std::string> m_errorDocuments;
     std::string m_path;
     std::string m_root;
+    size_t m_maxBodySize;
     std::vector<MountPoint *> m_nestedMounts;
     std::map<std::string, std::string> m_cgiParams;
 };

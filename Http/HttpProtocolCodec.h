@@ -18,7 +18,6 @@ class IAsyncRequestHandler;
 class HttpProtocolCodec
 {
 public:
-    typedef std::map<std::string, HttpMethod> tHttpMethodsMap;
     typedef std::map<std::string, std::string> tHeaderMap;
 
     explicit HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output);
@@ -52,10 +51,9 @@ private:
     void DispatchRequest();
 
     HttpClientHandler *m_handler;
-    BufferEvent *m_bufferEvent;
     DataBuffer *m_inputBuffer;
     DataBuffer *m_outputBuffer;
-    tHttpMethodsMap m_methods;
+    BufferEvent *m_bufferEvent;
     tHeaderMap m_headers;
     bool m_requestHeaderParsed;
     HttpMethod m_method;

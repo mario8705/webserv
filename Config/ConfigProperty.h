@@ -25,9 +25,9 @@ private:
     }
 
     std::string m_filter;
-    bool m_blockOnly;
     std::vector<ConfigProperty *>::const_iterator m_current;
     std::vector<ConfigProperty *>::const_iterator m_end;
+    bool m_blockOnly;
 };
 
 class ConfigProperty

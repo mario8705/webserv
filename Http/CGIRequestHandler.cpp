@@ -50,6 +50,7 @@ public:
 
                     key = line.substr(0, sep);
                     value = line.substr(sep + 1);
+                    utils::to_lower(value);
                     m_codec->AddHeader(utils::trim(key), utils::trim(value));
                 }
             }
@@ -60,11 +61,11 @@ public:
         }
     }
 
-    void HandleWrite(DataBuffer *buffer)
+    void HandleWrite(DataBuffer *)
     {
     }
 
-    void HandleEvent(EventType type)
+    void HandleEvent(EventType)
     {
         m_bev->Enable(0);
         m_codec->FinalizeResponse();

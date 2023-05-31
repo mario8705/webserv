@@ -4,6 +4,7 @@
 
 #include "Request.h"
 #include "HttpClientHandler.h"
+#include "HttpRegistry.h"
 
 Request::Request(HttpClientHandler *clientHandler, tHttpHeaders &headers)
     : m_clientHandler(clientHandler), m_headers(headers)
@@ -80,42 +81,12 @@ void Request::SetProtocolVersion(const HttpVersion& httpVersion)
     m_httpVersion = httpVersion;
 }
 
-static std::string GetHttpMethodString(HttpMethod m)
-{
-    switch (m)
-    {
-        case kHttpMethod_Get:
-            return "GET";
-
-        case kHttpMethod_Post:
-            return "POST";
-
-        case kHttpMethod_Patch:
-            return "PATCH";
-
-        case kHttpMethod_Delete:
-            return "DELETE";
-
-        case kHttpMethod_Head:
-            return "HEAD";
-
-        case kHttpMethod_Put:
-            return "PUT";
-
-        case kHttpMethod_Options:
-            return "OPTIONS";
-
-        default:
-            return "UNKNOWN";
-    }
-}
-
 void Request::EncodeCGIHeaders(std::map<std::string, std::string> &cgiEnv)
 {
     tHttpHeaders::const_iterator it;
     size_t i;
 
-    cgiEnv["REQUEST_METHOD"] = GetHttpMethodString(m_method); /* TODO move */
+    cgiEnv["REQUEST_METHOD"] = HttpRegistry::GetMethodName(m_method);
 
     /**
      * TODO security breach?? only allow headers from a predefined list?
@@ -124,9 +95,9 @@ void Request::EncodeCGIHeaders(std::map<std::string, std::string> &cgiEnv)
     {
         std::string key = it->first;
 
-        if (key == "Content-Length")
+        if (key == "content-length")
             cgiEnv["CONTENT_LENGTH"] = it->second;
-        else if (key == "Content-Type")
+        else if (key == "content-type")
             cgiEnv["CONTENT_TYPE"] = it->second;
 
         for (i = 0; i < key.size(); ++i)
@@ -143,7 +114,7 @@ void Request::EncodeCGIHeaders(std::map<std::string, std::string> &cgiEnv)
 size_t Request::GetContentLength() const {
     tHttpHeaders::const_iterator it;
 
-    it = m_headers.find("Content-Length");
+    it = m_headers.find("content-length");
     if (it == m_headers.end())
         return 0;
     return std::atoi(it->second.c_str());
@@ -153,7 +124,7 @@ std::string Request::GetContentType() const
 {
     tHttpHeaders::const_iterator it;
 
-    it = m_headers.find("Content-Type");
+    it = m_headers.find("content-type");
     if (it == m_headers.end())
         return "text/plain";
     return it->second;

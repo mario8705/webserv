@@ -15,7 +15,6 @@ static void collect_child_status(int)
 
     while ((p = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        std::cout << "Child died: " << p << std::endl;
     }
 }
 
@@ -29,36 +28,6 @@ int main(int argc, char *argv[])
     signal(SIGPIPE, SIG_IGN);
     signal(SIGCHLD, collect_child_status);
     signal(SIGTERM, handler_stub);
-
-    /*
-    CgiManager::tEnvMap m;
-
-    m["REDIRECT_STATUS"] = "200";
-    m["SCRIPT_FILENAME"] = "htdocs/phpinfo.php";
-    m["HTTP_COOKIE"] = "PHPSESSID=4n27jslhd1j89d0631eh0kog5n; path=/";
-    CgiManager mgr("/usr/local/bin/php-cgi", m);
-
-    mgr.SpawnSubProcess();
-
-    close(mgr.GetMOSI());
-
-    char buf[1024], *p;
-    int n;
-    int wn;
-
-    while ((n = read(mgr.GetMISO(), buf, sizeof(buf))) > 0)
-    {
-        p = buf;
-        while ((wn = write(1, buf, n)) > 0)
-        {
-            p += wn;
-            n -= wn;
-        }
-    }
-
-    printf("Ok c'est fini\n");
-    return 0;
-     */
 
     if (argc >= 3)
     {

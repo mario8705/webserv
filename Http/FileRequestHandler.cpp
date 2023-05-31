@@ -36,12 +36,12 @@ void FileRequestHandler::HandleEvent(EventType type) {
  * Data is available in the file buffer.
  * @param buffer
  */
-void FileRequestHandler::HandleRead(DataBuffer *buffer) {
+void FileRequestHandler::HandleRead(DataBuffer *) {
     if (m_codec->GetOutputBuffer()->GetLength() < 65536)
         m_codec->Write(m_event->GetInputBuffer());
 }
 
-void FileRequestHandler::HandleWrite(DataBuffer *buffer) {
+void FileRequestHandler::HandleWrite(DataBuffer *) {
 
 }
 

@@ -126,21 +126,23 @@ void DirectoryListing::Write(std::ostream &out)
             continue;
         }
 
-        std::string href = m_urlPath + dent->d_name;
+        std::string href = m_urlPath;
+        if (!href.empty() && href[href.size() - 1] != '/')
+            href.append("/");
+        href.append(dent->d_name);
 
         if (!std::strcmp(dent->d_name, ".."))
         {
-            if (path != "/") {
-                href = path.substr(0, path.size() - 1);
-                size_t l = href.find_last_of('/');
-                if (std::string::npos == l) {
-                    continue;
-                }
-                href = href.substr(0, l + 1);
-            }
-            else {
+            size_t l;
+
+            if (m_urlPath == "/")
                 continue;
-            }
+
+            href = m_urlPath.substr(0, m_urlPath.size() - 1);
+
+            if (std::string::npos == (l = href.find_last_of('/')))
+                continue;
+            href = href.substr(0, l + 1);
         }
         out << "            <tr>\n"
                "                <td>\n"

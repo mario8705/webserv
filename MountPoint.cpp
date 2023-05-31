@@ -3,8 +3,9 @@
 //
 
 #include "MountPoint.h"
-#include <sys/stat.h>
+#include <limits>
 #include <iostream>
+#include <sys/stat.h>
 #include "Regex/Pattern.h"
 #include "Http/Request.h"
 #include "Http/Response.h"
@@ -15,14 +16,14 @@
 #include "Http/HttpProtocolCodec.h"
 #include "string_utils.hpp"
 #include "Http/HttpStatusCode.h"
-#include "DirectoryListing.h"
 #include "IO/DataBuffer.h"
 #include <dirent.h>
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
 {
-    m_errorDocuments[404] = "404.html"; /* TODO inject from configuration */
+    m_allowedMethods = 0xFF; /* Allow all methods by default */
+    m_maxBodySize = std::numeric_limits<size_t>::max();
 }
 
 MountPoint::~MountPoint()
@@ -56,73 +57,57 @@ bool MountPoint::Matches(const std::string &path) const
 bool MountPoint::HandleRequest(Request *request, Response *response)
 {
     URL url = request->GetUrl();
+    std::string path, indexPath;
+    struct stat st;
+    MountPoint *bestCandidate;
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string>::const_iterator params_it;
+    size_t i;
 
     /* Subtract route prefix from url */
     if (m_routeMatch != kRouteMatch_Regex) {
         url.m_path = url.m_path.substr(m_path.size());
         if (url.m_path.empty() || url.m_path[0] != '/')
-            url.m_path.append("/");
+            url.m_path.insert(0, "/");
     }
 
-    std::string path;
-    struct stat st;
-    MountPoint *bestCandidate;
-
-    std::map<std::string, std::string> params;
-    std::map<std::string, std::string>::const_iterator params_it;
-
-    if ((bestCandidate = GetBestCandidateRoute(request)) != NULL)
+    if ((bestCandidate = GetBestCandidateRoute(request->GetRawPath())) != NULL)
         return bestCandidate->HandleRequest(request, response);
 
-    if (request->GetContentLength() > 8388608)
+    if (request->GetContentLength() > GetMaxBodySize())
     {
         throw HttpException(HttpStatusCode::RequestEntityTooLarge);
     }
 
-    if (request->GetMethod() == kHttpMethod_Invalid)
+    if (request->GetMethod() == kHttpMethod_Invalid ||
+            (m_allowedMethods & (int)request->GetMethod()) == 0)
     {
         throw HttpException(HttpStatusCode::MethodNotAllowed);
     }
 
     path = LocateFile(url);
+    std::cout << "Path: " << path << std::endl;
     if (stat(path.c_str(), &st) >= 0)
     {
-        /* TODO nginx uses ends_with(path, "/") to trigger auto index */
-        if (S_ISDIR(st.st_mode) && m_cgiDelegate.empty()) {
-            if (m_autoIndexEnabled) {
-                DIR *dirp;
-                struct dirent *dent;
-
-                response->AddHeader("Content-Type", "text/html; charset=utf-8");
-
-                if (NULL != (dirp = opendir(path.c_str()))) {
-                    DirectoryListing dir(dirp, request->GetRawPath(), path);
-                    std::stringstream ss;
-
-                    dir.Write(ss);
-
-                    response->GetBodyBuffer()->PutString(ss.str());
-                    closedir(dirp);
+        if (S_ISDIR(st.st_mode)) {
+            for (i = 0; i < m_indexList.size(); ++i) {
+                URL indexUrl = url;
+                indexUrl.Append(m_indexList[i]);
+                indexPath = LocateFile(indexUrl);
+                if ((bestCandidate =
+                        m_virtualHost->GetRootMountPoint()->GetBestCandidateRoute(
+                                indexUrl.m_path)) != NULL)
+                {
+                    if (bestCandidate->TryFile(indexPath, url, request, response))
+                        return true;
                 }
-                return true;
             }
-            else
-            {
+            if (!m_autoIndexEnabled || !response->SendAutoIndex(path, request->GetRawPath()))
                 throw HttpException(HttpStatusCode::Forbidden);
-            }
         }
         else
         {
-            if (!m_cgiDelegate.empty()) {
-                PopulateCgiParams(request, params);
-
-                if (response->CgiPass(request, path, m_cgiDelegate))
-                    return true;
-            }
-            else {
-                if (response->SendFile(path, st.st_size))
-                    return true;
-            }
+            return TryFile(path, url, request, response);
         }
     }
     return false;
@@ -133,7 +118,7 @@ RouteMatch MountPoint::GetRouteMatch() const
     return m_routeMatch;
 }
 
-bool MountPoint::HandleException(Request *request, Response *response, HttpException *e)
+bool MountPoint::HandleException(Request *, Response *response, HttpException *e)
 {
     std::map<int, std::string>::const_iterator it;
     std::string path;
@@ -141,10 +126,8 @@ bool MountPoint::HandleException(Request *request, Response *response, HttpExcep
     it = m_errorDocuments.find(e->GetStatus().GetStatusCode());
     if (m_errorDocuments.end() != it)
     {
-        path = LocateFile(URL(it->second));
-
-        /* TODO match response status to exception's */
-        if (response->SendFile(path))
+        response->SetStatus(e->GetStatus());
+        if (response->SendFile(it->second))
         {
             return true;
         }
@@ -243,10 +226,10 @@ void MountPoint::SetIndexList(const std::vector<std::string> &indexList) {
     m_indexList = indexList;
 }
 
-MountPoint *MountPoint::GetBestCandidateRoute(Request *req)
+MountPoint *MountPoint::GetBestCandidateRoute(const std::string &path) const
 {
     MountPoint *mountPoint, *bestCandidate;
-    std::vector<MountPoint *>::iterator it;
+    std::vector<MountPoint *>::const_iterator it;
 
     bestCandidate = NULL;
     for (it = m_nestedMounts.begin(); it != m_nestedMounts.end(); ++it)
@@ -254,7 +237,7 @@ MountPoint *MountPoint::GetBestCandidateRoute(Request *req)
         mountPoint = *it;
 
         if (mountPoint->GetRouteMatch() != kRouteMatch_Regex &&
-            mountPoint->Matches(req->GetRawPath()))
+            mountPoint->Matches(path))
         {
             if (!bestCandidate || bestCandidate->m_path.size() < mountPoint->m_path.size())
                 bestCandidate = mountPoint;
@@ -265,7 +248,7 @@ MountPoint *MountPoint::GetBestCandidateRoute(Request *req)
         mountPoint = *it;
 
         if (mountPoint->GetRouteMatch() == kRouteMatch_Regex &&
-            mountPoint->Matches(req->GetRawPath()))
+            mountPoint->Matches(path))
         {
             if (!bestCandidate || bestCandidate->m_path.size() < mountPoint->m_path.size() ||
                 bestCandidate->GetRouteMatch() != kRouteMatch_Regex)
@@ -273,4 +256,52 @@ MountPoint *MountPoint::GetBestCandidateRoute(Request *req)
         }
     }
     return bestCandidate;
+}
+
+void MountPoint::SetAllowedMethods(int allowedMethods) {
+    m_allowedMethods = allowedMethods;
+}
+
+bool MountPoint::TryFile(const std::string &realPath, const URL &, Request *req, Response *res)
+{
+    std::map<std::string, std::string> params;
+    struct stat st;
+
+    if (stat(realPath.c_str(), &st) < 0)
+        return false;
+
+    /* TODO nginx uses ends_with(path, "/") to trigger auto index */
+    if (!m_cgiDelegate.empty()) {
+        PopulateCgiParams(req, params);
+
+        if (res->CgiPass(req, realPath, m_cgiDelegate))
+            return true;
+    }
+    else {
+        if (res->SendFile(realPath, st.st_size))
+            return true;
+    }
+    return false;
+}
+
+void MountPoint::SetErrorPage(int nCode, const std::string &path)
+{
+    m_errorDocuments[nCode] = path;
+}
+
+void MountPoint::SetMaxBodySize(size_t maxBodySize)
+{
+    m_maxBodySize = maxBodySize;
+}
+
+size_t MountPoint::GetMaxBodySize() const
+{
+    size_t rootMaxBodySize;
+
+    if (m_virtualHost->GetRootMountPoint() == this)
+        return m_maxBodySize;
+    rootMaxBodySize = m_virtualHost->GetRootMountPoint()->GetMaxBodySize();
+    if (m_maxBodySize < rootMaxBodySize)
+        return m_maxBodySize;
+    return rootMaxBodySize;
 }

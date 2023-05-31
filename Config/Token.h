@@ -16,8 +16,8 @@ public:
     static bool tokenization(const std::string &filename, std::vector<Token *> &tokens);
 
 private:
-    TokenType _tokenType;
     std::string _token;
+    TokenType _tokenType;
     int m_line;
     int m_column;
 };

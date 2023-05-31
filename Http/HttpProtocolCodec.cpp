@@ -4,15 +4,16 @@
 
 #include "HttpProtocolCodec.h"
 #include <sstream>
-#include "HttpClientHandler.h"
+#include <iostream>
 #include "../IO/DataBuffer.h"
-#include "Request.h"
-#include "Response.h"
 #include "../IO/BufferEvent.h"
-#include "AsyncRequestHandler.h"
 #include "../string_utils.hpp"
+#include "Request.h"
+#include "HttpClientHandler.h"
+#include "Response.h"
+#include "AsyncRequestHandler.h"
 #include "HttpException.h"
-#include <stdio.h>
+#include "HttpRegistry.h"
 
 HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *input, DataBuffer *output)
         : m_handler(handler), m_inputBuffer(input), m_outputBuffer(output), m_bufferEvent(handler->GetBufferEvent())
@@ -21,14 +22,6 @@ HttpProtocolCodec::HttpProtocolCodec(HttpClientHandler *handler, DataBuffer *inp
     m_asyncHandler = NULL;
     m_headersSent = false;
     m_pendingFinalizeResponse = false;
-
-    m_methods.insert(std::make_pair("GET", kHttpMethod_Get));
-    m_methods.insert(std::make_pair("POST", kHttpMethod_Post));
-    m_methods.insert(std::make_pair("PUT", kHttpMethod_Put));
-    m_methods.insert(std::make_pair("PATCH", kHttpMethod_Patch));
-    m_methods.insert(std::make_pair("DELETE", kHttpMethod_Delete));
-    m_methods.insert(std::make_pair("HEAD", kHttpMethod_Head));
-    m_methods.insert(std::make_pair("OPTIONS", kHttpMethod_Options));
 }
 
 HttpProtocolCodec::~HttpProtocolCodec()
@@ -54,8 +47,8 @@ void HttpProtocolCodec::ProcessDataInput()
                     }
                 } else {
                     if (line.empty()) {
-                        if (m_headers.find("Content-Length") != m_headers.end()) {
-                            std::string contentLength = m_headers["Content-Length"];
+                        if (m_headers.find("content-length") != m_headers.end()) {
+                            std::string contentLength = m_headers["content-length"];
                             size_t i;
 
                             for (i = 0; i < contentLength.size(); ++i) {
@@ -102,12 +95,6 @@ void HttpProtocolCodec::ProcessDataInput()
                     break ;
             }
         }
-        if (m_inputBuffer->GetLength() >= m_inputBuffer->GetReadHighWatermark()) {
-            /* TODO handle veryyyy looong requests */
-            // printf("Buffer full and no line could be read\n");
-            //m_event->GetOutputBuffer()->PutString("Buffer full");
-            // Disconnect(true);
-        }
     }
 
     if (m_asyncHandler)
@@ -151,7 +138,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
     {
         rawPath = line.substr(methodSep + 1);
     }
-    printf("[%s] %s\n", method.c_str(), rawPath.c_str());
+    std::cerr << "[" << method << "] " << rawPath << std::endl;
     SetRequestHeader(method, rawPath, httpVersion);
 }
 
@@ -162,15 +149,8 @@ void HttpProtocolCodec::SetRequestHeader(const std::string &method, const std::s
     {
         throw HttpException(HttpStatusCode::BadRequest);
     }
-
     m_httpVersion = HttpVersion::Min(HttpVersion(1, 1), m_httpVersion);
-
-    tHttpMethodsMap::const_iterator methodsIt = m_methods.find(method);
-    if (methodsIt == m_methods.end())
-        m_method = kHttpMethod_Invalid;
-    else
-        m_method = methodsIt->second;
-
+    m_method = HttpRegistry::GetMethodByName(method);
     m_rawPath = rawPath;
     utils::trim(m_rawPath);
 }
@@ -186,6 +166,7 @@ void HttpProtocolCodec::ParseHeader(const std::string &line)
     {
         key = line.substr(0, sep);
         value = line.substr(sep + 1);
+        utils::to_lower(key);
     }
     else
     {
@@ -219,7 +200,6 @@ void HttpProtocolCodec::DispatchRequest()
     Request request(m_handler, m_headers);
     Response response(m_handler);
     tHeaderMap headers;
-    IAsyncRequestHandler *asyncHandler;
     DataBuffer *body;
 
     request.SetMethod(m_method);
@@ -237,7 +217,6 @@ void HttpProtocolCodec::DispatchRequest()
     }
     catch (...)
     {
-        printf("Unexpected error\n");
     }
 
     m_responseHeaders.swap(response.GetHeaders());
@@ -251,11 +230,12 @@ void HttpProtocolCodec::DispatchRequest()
         m_responseHeaders["Content-Length"] = utils::to_string(response.GetContentLength());
     }
 
+    m_responseHeaders["Connection"] = "close";
+
     m_responseStatus = response.GetStatusCode();
     m_responseMessage = response.GetStatusMessage();
 
     m_asyncHandler = response.GetAsyncHandler();
-    printf("Async Handler oàoà %p:%p\n", this, m_asyncHandler);
     m_chunked = response.IsChunked();
 
     body = response.GetBodyBuffer();

@@ -25,9 +25,6 @@ bool Pattern::Match(const std::string &input)
 
 void Pattern::Compile(const std::string &regex)
 {
-    size_t i;
-    size_t pos;
-
     m_elements.clear();
     m_elements.reserve(16);
     DecodeElements(m_elements, regex, 0, regex.size());
@@ -205,9 +202,7 @@ size_t Pattern::DecodeOccurenceModifier(RegexElement &element,
         {
             for (i = head + 1; i < pos; ++i)
             {
-           //     printf("Occurence %c\n", regex[i]); /* TODO */
-                //if (!std::isdigit(regex[i]))
-                  //  break ;
+                /* For the next version... */
             }
         }
     }

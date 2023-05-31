@@ -22,6 +22,7 @@
 #include <iostream>
 #include <string>
 #include "MimeDatabase.h"
+#include "Http/HttpRegistry.h"
 
 Webserv *Webserv::s_instance = NULL;
 
@@ -36,6 +37,7 @@ Webserv::Webserv()
 Webserv::~Webserv()
 {
     tVirtualHostList::const_iterator it;
+    size_t i;
 
     s_instance = NULL;
     for (it = m_virtualHosts.begin(); it != m_virtualHosts.end(); ++it)
@@ -43,7 +45,8 @@ Webserv::~Webserv()
         delete *it;
     }
 
-    /* TODO free all ServerHost */
+    for (i = 0; i < m_hosts.size(); ++i)
+        delete m_hosts[i];
 
     delete m_eventLoop;
     delete m_mimeDatabase;
@@ -105,7 +108,7 @@ void Webserv::Run() {
         if (m_eventLoop->LoopOnce())
             break ;
     }
-    /* TODO printf("Shutting down...\n"); */
+    std::cerr << "Shutting down..." << std::endl;
 }
 
 ServerHost *Webserv::GetServerHostByAddr(const NetworkAddress4 &addr) const
@@ -139,6 +142,17 @@ IEventLoop *Webserv::GetEventLoop() const
     return m_eventLoop;
 }
 
+static void cleanTokens(std::vector<Token *> &tokens)
+{
+    if (!tokens.empty())
+    {
+        std::vector<Token *>::iterator it = tokens.begin();
+        for (;  it != tokens.end() ; ++it) {
+            delete *it;
+        }
+    }
+}
+
 bool Webserv::LoadConfig(const std::string &path)
 {
     std::vector<Token *> tokens;
@@ -152,10 +166,12 @@ bool Webserv::LoadConfig(const std::string &path)
     try {
         ConfigProperty::push_config(rootProperty, tokens);
         ParseConfig(rootProperty);
+        cleanTokens(tokens);
     }
     catch (std::exception &exception)
     {
         std::cerr << "Error:Bad configuration file (" << exception.what() << ")" << std::endl;
+        cleanTokens(tokens);
         delete rootProperty;
         return false;
     }
@@ -181,7 +197,7 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
             isFileRunnable = true;
         }
         else
-            std::cerr << "Unknown property block " << prop->GetName() << std::endl;
+            throw std::runtime_error("Unknown property block: " + prop->GetName());
     }
 
     int nbValidParams = 0;
@@ -251,16 +267,45 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
     {
         const std::vector<std::string> &params = prop->getParams();
 
-        /* TODO move this in MountPoint (location block) */
-        if (prop->GetName() == "index")
+        if (prop->GetName() == "client_max_body_size")
         {
-            if (prop->getParams().size() < 2)
+            if (params.size() != 2)
             {
-                std::cerr << "index property requires at least 1 parameters" << std::endl;
+                throw std::runtime_error("client_max_body_size property requires at least 1 parameter");
             }
-            else
-            {
 
+            std::string maxBodySize = params[1];
+            for (i = 0; i < maxBodySize.size(); ++i)
+            {
+                if (!std::isdigit(maxBodySize[i]))
+                    break ;
+            }
+            if (i != maxBodySize.size() || i > 10)
+                throw std::runtime_error("client_max_body_size value is invalid");
+            virtualHost->GetRootMountPoint()->SetMaxBodySize(std::atoi(maxBodySize.c_str()));
+        }
+        else if (prop->GetName() == "error_page")
+        {
+            if (params.size() < 3)
+            {
+                throw std::runtime_error("error_page property requires at least 2 parameters");
+            }
+            for (i = 1; i < params.size() - 1; i++)
+            {
+                std::string code = params[i];
+                int nCode;
+
+                for (j = 0; j < code.size(); ++j)
+                {
+                    if (!std::isdigit(code[i]))
+                        break ;
+                }
+
+                nCode = std::atoi(code.c_str());
+                if (j != code.size() || j > 3 || nCode < 200 || nCode >= 600)
+                    throw std::runtime_error("Invalid HTTP status code " + code);
+
+                virtualHost->GetRootMountPoint()->SetErrorPage(nCode, params[params.size() - 1]);
             }
         }
         else if (prop->GetName() == "listen")
@@ -345,10 +390,12 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
     bool autoIndex = false;
     PropertyIterator it = locationBlock->FindAllProps();
     ConfigProperty *prop;
+    int allowedMethods;
     size_t i;
 
     const std::vector<std::string> &locationParams = locationBlock->getParams();
 
+    allowedMethods = 0xFF;
     if (locationParams.size() < 2)
     {
         throw std::runtime_error("Location block requires at least one parameters");
@@ -404,6 +451,26 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
                 }
             }
         }
+        else if (prop->GetName() == "allow_methods")
+        {
+            HttpMethod method;
+
+            if (params.size() < 2)
+            {
+                throw std::runtime_error("The allow_methods property requires at least one parameter");
+            }
+            allowedMethods = 0;
+            for (i = 1; i < params.size(); ++i)
+            {
+                method = HttpRegistry::GetMethodByName(params[i]);
+                if (kHttpMethod_Invalid == method)
+                {
+                    throw std::runtime_error("Unknown HTTP method " + params[i]);
+                }
+                allowedMethods |= (int)method;
+            }
+
+        }
         else if (prop->GetName() == "autoindex")
         {
             if (params.size() != 2)
@@ -444,6 +511,7 @@ void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *vir
     mountPoint = new MountPoint(virtualHost, routeMatch, path);
     mountPoint->SetAutoIndex(autoIndex);
     mountPoint->SetRoot(root);
+    mountPoint->SetAllowedMethods(allowedMethods);
     mountPoint->SetCGIDelegate(cgiPass);
     mountPoint->SetIndexList(indexList);
     virtualHost->GetRootMountPoint()->AddNestedMount(mountPoint);
