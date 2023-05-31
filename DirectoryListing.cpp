@@ -5,8 +5,8 @@
 #include "DirectoryListing.h"
 #include <sys/stat.h>
 
-DirectoryListing::DirectoryListing(DIR *dirp, const std::string &baseUrl)
-    : m_dirp(dirp), m_baseUrl(baseUrl)
+DirectoryListing::DirectoryListing(DIR *dirp, const std::string &urlPath, const std::string &realPath)
+    : m_dirp(dirp), m_urlPath(urlPath), m_realPath(realPath)
 {
 }
 
@@ -46,7 +46,7 @@ void DirectoryListing::Write(std::ostream &out)
     struct dirent *dent;
     std::string path;
 
-    path = m_baseUrl;
+    path = m_realPath;
     if (!path.empty() && path[path.size() - 1] != '/')
         path.append("/");
 
@@ -54,7 +54,7 @@ void DirectoryListing::Write(std::ostream &out)
            "<html lang=\"en\">\n"
            "<head>\n"
            "    <meta charset=\"UTF-8\">\n"
-           "    <title>Directory listing of " << m_baseUrl << "</title>\n"
+           "    <title>Directory listing of " << m_urlPath << "</title>\n"
            "    <style>\n"
            "        body {\n"
            "            font-family: system-ui, -apple-system, \"Verdana\", sans-serif;\n"
@@ -111,7 +111,7 @@ void DirectoryListing::Write(std::ostream &out)
            "    </style>\n"
            "</head>\n"
            "<body>\n"
-           "    <h1>Directory listing of " << m_baseUrl << "</h1>\n"
+           "    <h1>Directory listing of " << m_urlPath << "</h1>\n"
            "    <table>\n"
            "        <thead>\n"
            "        <tr>\n"
@@ -126,12 +126,11 @@ void DirectoryListing::Write(std::ostream &out)
             continue;
         }
 
-        std::string href = path + dent->d_name;
+        std::string href = m_urlPath + dent->d_name;
 
         if (!std::strcmp(dent->d_name, ".."))
         {
             if (path != "/") {
-                printf("Path: %s\n", path.c_str());
                 href = path.substr(0, path.size() - 1);
                 size_t l = href.find_last_of('/');
                 if (std::string::npos == l) {
