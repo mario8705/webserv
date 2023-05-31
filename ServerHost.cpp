@@ -16,8 +16,6 @@
 #include "Webserv.h"
 #include <stdio.h>
 
-int fd_set_non_blocking(int fd);
-
 ServerHost::ServerHost(Webserv *webserv, NetworkAddress4 bindAddress)
     : m_webserv(webserv), m_eventLoop(webserv->GetEventLoop()), m_bindAddress(bindAddress)
 {
@@ -43,14 +41,7 @@ void ServerHost::HandleConnection(int fd, struct sockaddr *addr, socklen_t addrl
 {
     HttpClientHandler *client;
 
-    if (fd_set_non_blocking(fd) < 0)
-    {
-        ::close(fd);
-        return ;
-    }
-
     client = new HttpClientHandler(this, fd);
-
     m_clients.push_back(client);
 }
 

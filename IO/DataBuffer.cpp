@@ -101,7 +101,7 @@ int DataBuffer::Read(int fd)
     }
     else
     {
-        /* TODO perror("read"); */
+        perror("read");
     }
     return static_cast<int>(n);
 }

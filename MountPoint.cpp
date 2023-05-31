@@ -127,7 +127,7 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
             if (!m_cgiDelegate.empty()) {
                 PopulateCgiParams(request, params);
 
-                if (response->CgiPass(request, url.GetAbsolutePath(m_root), m_cgiDelegate)) //todo: replace path with the True Path in the config file
+                if (response->CgiPass(request, url.GetAbsolutePath(m_root), m_cgiDelegate))
                     return true;
             }
             else {
