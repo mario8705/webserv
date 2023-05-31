@@ -89,10 +89,7 @@ bool SelectEventLoop::LoopOnce()
         n = select(nfds + 1, &rdset, &wrset, NULL, NULL);
     } while (n < 0 && errno == EINTR);
     if (n < 0)
-    {
-        perror("select");
         return true;
-    }
     for (it = m_eventMap.begin(); it != m_eventMap.end(); ++it)
     {
         fd = it->first;
