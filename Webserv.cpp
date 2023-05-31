@@ -187,7 +187,6 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
         if (prop->GetName() == "types")
         {
             ParseMimeDatabase(prop);
-            isFileRunnable = true;
         }
         else if (prop->GetName() == "server")
         {
