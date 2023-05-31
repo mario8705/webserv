@@ -57,6 +57,12 @@ bool MountPoint::Matches(const std::string &path) const
 bool MountPoint::HandleRequest(Request *request, Response *response)
 {
     URL url = request->GetUrl();
+    std::string path, indexPath;
+    struct stat st;
+    MountPoint *bestCandidate;
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string>::const_iterator params_it;
+    size_t i;
 
     /* Subtract route prefix from url */
     if (m_routeMatch != kRouteMatch_Regex) {
@@ -64,14 +70,6 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
         if (url.m_path.empty() || url.m_path[0] != '/')
             url.m_path.insert(0, "/");
     }
-
-    std::string path, indexPath;
-    struct stat st;
-    MountPoint *bestCandidate;
-    size_t i;
-
-    std::map<std::string, std::string> params;
-    std::map<std::string, std::string>::const_iterator params_it;
 
     if ((bestCandidate = GetBestCandidateRoute(request->GetRawPath())) != NULL)
         return bestCandidate->HandleRequest(request, response);
