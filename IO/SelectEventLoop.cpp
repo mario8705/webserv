@@ -124,17 +124,18 @@ void SelectEventLoop::RaiseReadEvent(IOEvent *evt)
 void SelectEventLoop::ProcessPendingEvents()
 {
     IOEvent *evt;
+    size_t i;
 
-    while (!m_pendingReads.empty())
+    for (i = 0; i < m_pendingReads.size(); ++i)
     {
-        evt = m_pendingReads.back();
-        m_pendingReads.pop_back();
+        evt = m_pendingReads[i];
         evt->NotifyRead();
     }
-    while (!m_pendingWrites.empty())
+    for (i = 0; i < m_pendingWrites.size(); ++i)
     {
-        evt = m_pendingWrites.back();
-        m_pendingWrites.pop_back();
+        evt = m_pendingWrites[i];
         evt->NotifyWrite();
     }
+    m_pendingReads.clear();
+    m_pendingWrites.clear();
 }

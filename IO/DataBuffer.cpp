@@ -192,6 +192,8 @@ int DataBuffer::Write(int fd)
         chain = *it;
         sz = chain->m_offset - chain->m_misalign;
         n = write(fd, chain->m_buffer + chain->m_misalign, sz);
+
+        perror("write");
         if (n <= 0) {
             if (n == 0 && total > 0)
                 return total;
