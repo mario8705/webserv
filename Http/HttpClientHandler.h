@@ -27,6 +27,8 @@ public:
 
     void Disconnect(bool flush);
 
+    bool IsDisconnecting() const;
+
     BufferEvent *GetBufferEvent() const;
     HttpProtocolCodec *GetProtocolCodec() const;
     IEventLoop *GetEventLoop() const;
