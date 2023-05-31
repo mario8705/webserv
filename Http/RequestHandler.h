@@ -13,7 +13,7 @@ class IRequestHandler
 public:
     virtual ~IRequestHandler() {}
 
-    virtual void HandleRequest(Request *request, Response *response) = 0;
+    virtual bool HandleRequest(Request *request, Response *response) = 0;
 };
 
 #endif //WEBSERV_REQUESTHANDLER_H

@@ -17,7 +17,6 @@ public:
     }
 
     ConfigProperty *Next();
-    bool HasNext() const;
 
 private:
     PropertyIterator(const std::vector<ConfigProperty *> &v, const std::string &filter, bool blockOnly)
@@ -48,9 +47,14 @@ public:
 
     void Dump(std::ostream &out, int indent = 0);
 
-    PropertyIterator FindAllProps(const std::string &name) const
+    PropertyIterator FindAllProps(const std::string &name = "") const
     {
         return PropertyIterator(_body, name, false);
+    }
+
+    PropertyIterator FindAllBlocks(const std::string &name = "") const
+    {
+        return PropertyIterator(_body, name, true);
     }
 
     size_t GetParamsCount() const
@@ -58,7 +62,7 @@ public:
         return _params.size();
     }
 
-    static ConfigProperty *push_config(const std::vector<Token *> &tokens);
+    static ConfigProperty *push_config(ConfigProperty *rootProp, const std::vector<Token *> &tokens);
 
 private:
     std::vector<std::string> _params;

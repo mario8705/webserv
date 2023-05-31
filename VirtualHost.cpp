@@ -3,9 +3,14 @@
 //
 
 #include "VirtualHost.h"
+#include <sstream>
 #include "ServerHost.h"
 #include "Http/HttpException.h"
 #include "MountPoint.h"
+#include "Http/Request.h"
+#include "Http/Response.h"
+#include "IO/DataBuffer.h"
+#include "Http/FileRequestHandler.h"
 
 VirtualHost::VirtualHost()
 {
@@ -22,18 +27,10 @@ void VirtualHost::AddListenAddress(const NetworkAddress4 &addr)
     m_bindAddresses.push_back(addr);
 }
 
-#include "Http/Request.h"
-#include "Http/Response.h"
-#include "IO/DataBuffer.h"
-#include "IO/BufferEvent.h"
-#include <sstream>
-#include "Http/FileRequestHandler.h"
-#include "Http/URL.h"
-#include "MountPoint.h"
-
-void VirtualHost::HandleRequest(Request *request, Response *response)
+bool VirtualHost::HandleRequest(Request *request, Response *response)
 {
     DispatchRequest(m_rootMountPoint, request, response);
+    return true;
 }
 
 const VirtualHost::tServerNameList &VirtualHost::GetServerNames() const
@@ -45,7 +42,8 @@ void VirtualHost::DispatchRequest(MountPoint *mountPoint, Request *request, Resp
 {
     try
     {
-        mountPoint->HandleRequest(request, response);
+        if (!mountPoint->HandleRequest(request, response))
+            throw HttpException(HttpStatusCode::NotFound);
     }
     catch (HttpException &e)
     {
@@ -56,4 +54,8 @@ void VirtualHost::DispatchRequest(MountPoint *mountPoint, Request *request, Resp
             response->GetBodyBuffer()->PutString(e.GetStatus().GetStatusMessage());
         }
     }
+}
+
+void VirtualHost::AddMountPoint(MountPoint *mountPoint) {
+    m_rootMountPoint->AddNestedMount(mountPoint);
 }

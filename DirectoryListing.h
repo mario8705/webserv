@@ -5,19 +5,23 @@
 #ifndef WEBSERV_DIRECTORYLISTING_H
 #define WEBSERV_DIRECTORYLISTING_H
 #include <string>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 #include <ostream>
 #include <dirent.h>
 
 class DirectoryListing
 {
 public:
-    DirectoryListing(DIR *dirp, const std::string &baseUrl);
+    DirectoryListing(DIR *dirp, const std::string &urlPath, const std::string &realPath);
 
     void Write(std::ostream &out);
 
 private:
     DIR *m_dirp;
-    std::string m_baseUrl;
+    std::string m_urlPath;
+    std::string m_realPath;
 };
 
 

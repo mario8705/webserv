@@ -2,8 +2,9 @@
 // Created by Alexis Lavaud on 08/05/2023.
 //
 
-#include <sys/stat.h>
 #include "MountPoint.h"
+#include <sys/stat.h>
+#include <iostream>
 #include "Regex/Pattern.h"
 #include "Http/Request.h"
 #include "Http/Response.h"
@@ -16,6 +17,7 @@
 #include "Http/HttpStatusCode.h"
 #include "DirectoryListing.h"
 #include "IO/DataBuffer.h"
+#include <dirent.h>
 
 MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const std::string &path)
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
@@ -35,10 +37,9 @@ MountPoint::~MountPoint()
 
 bool MountPoint::Matches(const std::string &path) const
 {
-    switch (m_routeMatch)
-    {
-    case kRouteMatch_Exact:
-        break ;
+    switch (m_routeMatch) {
+        case kRouteMatch_Exact:
+            break;
 
         case kRouteMatch_Regex:
             return Pattern::Matches(m_path, path);
@@ -46,25 +47,32 @@ bool MountPoint::Matches(const std::string &path) const
         case kRouteMatch_StartsWith:
             return !path.compare(0, m_path.size(), m_path);
 
-    default:
-        break;
+        default:
+            break;
     }
     return false;
 }
 
-#include <dirent.h>
-#include <stdio.h>
-
-void MountPoint::HandleRequest(Request *request, Response *response)
+bool MountPoint::HandleRequest(Request *request, Response *response)
 {
-    std::vector<MountPoint *>::iterator it;
-    MountPoint *mountPoint;
     URL url = request->GetUrl();
+
+    /* Subtract route prefix from url */
+    if (m_routeMatch != kRouteMatch_Regex) {
+        url.m_path = url.m_path.substr(m_path.size());
+        if (url.m_path.empty() || url.m_path[0] != '/')
+            url.m_path.append("/");
+    }
+
     std::string path;
     struct stat st;
+    MountPoint *bestCandidate;
 
     std::map<std::string, std::string> params;
     std::map<std::string, std::string>::const_iterator params_it;
+
+    if ((bestCandidate = GetBestCandidateRoute(request)) != NULL)
+        return bestCandidate->HandleRequest(request, response);
 
     if (request->GetContentLength() > 8388608)
     {
@@ -76,53 +84,53 @@ void MountPoint::HandleRequest(Request *request, Response *response)
         throw HttpException(HttpStatusCode::MethodNotAllowed);
     }
 
-    PopulateCgiParams(request, params);
-
     path = LocateFile(url);
     if (stat(path.c_str(), &st) >= 0)
     {
-        if (S_ISDIR(st.st_mode))
-        {
-            DIR *dirp;
-            struct dirent *dent;
+        /* TODO nginx uses ends_with(path, "/") to trigger auto index */
+        if (S_ISDIR(st.st_mode) && m_cgiDelegate.empty()) {
+            if (m_autoIndexEnabled) {
+                DIR *dirp;
+                struct dirent *dent;
 
-            response->AddHeader("Content-Type", "text/html; charset=utf-8");
+                response->AddHeader("Content-Type", "text/html; charset=utf-8");
 
-            if (NULL != (dirp = opendir(path.c_str())))
-            {
-                DirectoryListing dir(dirp, url.m_path);
-                std::stringstream ss;
+                if (NULL != (dirp = opendir(path.c_str()))) {
+                    DirectoryListing dir(dirp, request->GetRawPath(), path);
+                    std::stringstream ss;
 
-                dir.Write(ss);
+                    dir.Write(ss);
 
-                response->GetBodyBuffer()->PutString(ss.str());
-                closedir(dirp);
+                    response->GetBodyBuffer()->PutString(ss.str());
+                    closedir(dirp);
+                }
+                return true;
             }
-            return ;
+            else
+            {
+                throw HttpException(HttpStatusCode::Forbidden);
+            }
         }
         else
         {
-            if (utils::ends_with(path, ".php")) {
-                if (response->CgiPass(request, url.GetAbsolutePath(m_root), "/usr/local/bin/php-cgi"/* path */))
-                    return;
+            if (!m_cgiDelegate.empty()) {
+                PopulateCgiParams(request, params);
+
+                if (response->CgiPass(request, path, m_cgiDelegate))
+                    return true;
             }
             else {
                 if (response->SendFile(path, st.st_size))
-                    return;
+                    return true;
             }
         }
     }
-    for (it = m_nestedMounts.begin(); it != m_nestedMounts.end(); ++it)
-    {
-        mountPoint = *it;
+    return false;
+}
 
-        if (mountPoint->Matches(request->GetRawPath()))
-        {
-            return mountPoint->HandleRequest(request, response);
-        }
-    }
-    /* TODO Exceptions aren't working anymore */
-    throw HttpException(HttpStatusCode::NotFound);
+RouteMatch MountPoint::GetRouteMatch() const
+{
+    return m_routeMatch;
 }
 
 bool MountPoint::HandleException(Request *request, Response *response, HttpException *e)
@@ -151,7 +159,7 @@ void MountPoint::AddNestedMount(MountPoint *mountPoint)
 
 std::string MountPoint::LocateFile(const URL &url) const
 {
-    if (!m_root.empty())
+   if (!m_root.empty())
         return url.GetAbsolutePath(m_root);
     return url.GetAbsolutePath(m_virtualHost->GetRootMountPoint()->GetRoot());
 }
@@ -221,4 +229,48 @@ void MountPoint::PopulateCgiParams(Request *request, std::map<std::string, std::
     {
         paramsOut[it->first] = ResolveVars(it->second, vars);
     }
+}
+
+void MountPoint::SetAutoIndex(bool enabled) {
+    m_autoIndexEnabled = enabled;
+}
+
+void MountPoint::SetCGIDelegate(const std::string &cgiPath) {
+    m_cgiDelegate = cgiPath;
+}
+
+void MountPoint::SetIndexList(const std::vector<std::string> &indexList) {
+    m_indexList = indexList;
+}
+
+MountPoint *MountPoint::GetBestCandidateRoute(Request *req)
+{
+    MountPoint *mountPoint, *bestCandidate;
+    std::vector<MountPoint *>::iterator it;
+
+    bestCandidate = NULL;
+    for (it = m_nestedMounts.begin(); it != m_nestedMounts.end(); ++it)
+    {
+        mountPoint = *it;
+
+        if (mountPoint->GetRouteMatch() != kRouteMatch_Regex &&
+            mountPoint->Matches(req->GetRawPath()))
+        {
+            if (!bestCandidate || bestCandidate->m_path.size() < mountPoint->m_path.size())
+                bestCandidate = mountPoint;
+        }
+    }
+    for (it = m_nestedMounts.begin(); it != m_nestedMounts.end(); ++it)
+    {
+        mountPoint = *it;
+
+        if (mountPoint->GetRouteMatch() == kRouteMatch_Regex &&
+            mountPoint->Matches(req->GetRawPath()))
+        {
+            if (!bestCandidate || bestCandidate->m_path.size() < mountPoint->m_path.size() ||
+                bestCandidate->GetRouteMatch() != kRouteMatch_Regex)
+                bestCandidate = mountPoint;
+        }
+    }
+    return bestCandidate;
 }

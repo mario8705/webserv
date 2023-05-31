@@ -16,8 +16,6 @@
 #include "Webserv.h"
 #include <stdio.h>
 
-int fd_set_non_blocking(int fd);
-
 ServerHost::ServerHost(Webserv *webserv, NetworkAddress4 bindAddress)
     : m_webserv(webserv), m_eventLoop(webserv->GetEventLoop()), m_bindAddress(bindAddress)
 {
@@ -43,14 +41,7 @@ void ServerHost::HandleConnection(int fd, struct sockaddr *addr, socklen_t addrl
 {
     HttpClientHandler *client;
 
-    if (fd_set_non_blocking(fd) < 0)
-    {
-        ::close(fd);
-        return ;
-    }
-
     client = new HttpClientHandler(this, fd);
-
     m_clients.push_back(client);
 }
 
@@ -96,7 +87,7 @@ void ServerHost::AddVirtualHost(VirtualHost *virtualHost)
     }
 }
 
-void ServerHost::HandleRequest(Request *request, Response *response)
+bool ServerHost::HandleRequest(Request *request, Response *response)
 {
     const Request::tHttpHeaders &headers = request->GetHeaders();
     Request::tHttpHeaders::const_iterator it;
@@ -108,16 +99,13 @@ void ServerHost::HandleRequest(Request *request, Response *response)
         host = it->second;
     virtualHost = MatchVirtualHost(host);
 
-    if (NULL != virtualHost)
-    {
-        virtualHost->HandleRequest(request, response);
-    }
-    else
+    if (NULL == virtualHost || !virtualHost->HandleRequest(request, response))
     {
         /* TODO throw a 404 */
         response->SetStatus(HttpStatusCode::NotFound);
       //  response->GetOutputBuffer()->PutString("<center><h1>404 Not Found :(</h1></center>");
     }
+    return true;
 }
 
 VirtualHost *ServerHost::MatchVirtualHost(std::string host)
