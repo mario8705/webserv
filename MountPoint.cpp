@@ -62,7 +62,7 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
     if (m_routeMatch != kRouteMatch_Regex) {
         url.m_path = url.m_path.substr(m_path.size());
         if (url.m_path.empty() || url.m_path[0] != '/')
-            url.m_path.append("/");
+            url.m_path.insert(0, "/");
     }
 
     std::string path, indexPath;
@@ -88,6 +88,7 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
     }
 
     path = LocateFile(url);
+    std::cout << "Path: " << path << std::endl;
     if (stat(path.c_str(), &st) >= 0)
     {
         if (S_ISDIR(st.st_mode)) {
