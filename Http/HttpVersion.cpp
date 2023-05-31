@@ -18,11 +18,6 @@ HttpVersion::~HttpVersion()
 {
 }
 
-bool HttpVersion::IsCompatible(const HttpVersion &version) const
-{
-    return false; /* TODO */
-}
-
 int HttpVersion::GetMajor() const
 {
     return m_major;

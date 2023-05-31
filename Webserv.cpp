@@ -239,6 +239,7 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
 {
     PropertyIterator propsIterator = serverBlock->FindAllProps();
     PropertyIterator blocksIterator = serverBlock->FindAllBlocks();
+    size_t maxBodySize;
     ConfigProperty *prop;
     size_t i, j;
 
@@ -248,21 +249,27 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
     VirtualHost *virtualHost = new VirtualHost;
     m_virtualHosts.push_back(virtualHost);
 
+    maxBodySize = 8388608;
     while ((prop = propsIterator.Next()) != NULL)
     {
         const std::vector<std::string> &params = prop->getParams();
 
-        /* TODO move this in MountPoint (location block) */
-        if (prop->GetName() == "index")
+        if (prop->GetName() == "client_max_body_size")
         {
-            if (prop->getParams().size() < 2)
+            if (params.size() != 2)
             {
-                std::cerr << "index property requires at least 1 parameters" << std::endl;
+                throw std::runtime_error("client_max_body_size property requires at least 1 parameter");
             }
-            else
-            {
 
+            std::string maxBodySize = params[1];
+            for (i = 0; i < maxBodySize.size(); ++i)
+            {
+                if (!std::isdigit(maxBodySize[i]))
+                    break ;
             }
+            if (i != maxBodySize.size() || i > 10)
+                throw std::runtime_error("client_max_body_size value is invalid");
+            virtualHost->GetRootMountPoint()->SetMaxBodySize(std::atoi(maxBodySize.c_str()));
         }
         else if (prop->GetName() == "error_page")
         {

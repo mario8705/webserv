@@ -14,8 +14,6 @@ public:
     HttpVersion(int major, int minor);
     ~HttpVersion();
 
-    bool IsCompatible(const HttpVersion &version) const;
-
     static HttpVersion Min(const HttpVersion &a, const HttpVersion &b);
 
     int GetMajor() const;

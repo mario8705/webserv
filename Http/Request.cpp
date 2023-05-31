@@ -4,6 +4,7 @@
 
 #include "Request.h"
 #include "HttpClientHandler.h"
+#include "HttpRegistry.h"
 
 Request::Request(HttpClientHandler *clientHandler, tHttpHeaders &headers)
     : m_clientHandler(clientHandler), m_headers(headers)
@@ -80,42 +81,12 @@ void Request::SetProtocolVersion(const HttpVersion& httpVersion)
     m_httpVersion = httpVersion;
 }
 
-static std::string GetHttpMethodString(HttpMethod m)
-{
-    switch (m)
-    {
-        case kHttpMethod_Get:
-            return "GET";
-
-        case kHttpMethod_Post:
-            return "POST";
-
-        case kHttpMethod_Patch:
-            return "PATCH";
-
-        case kHttpMethod_Delete:
-            return "DELETE";
-
-        case kHttpMethod_Head:
-            return "HEAD";
-
-        case kHttpMethod_Put:
-            return "PUT";
-
-        case kHttpMethod_Options:
-            return "OPTIONS";
-
-        default:
-            return "UNKNOWN";
-    }
-}
-
 void Request::EncodeCGIHeaders(std::map<std::string, std::string> &cgiEnv)
 {
     tHttpHeaders::const_iterator it;
     size_t i;
 
-    cgiEnv["REQUEST_METHOD"] = GetHttpMethodString(m_method); /* TODO move */
+    cgiEnv["REQUEST_METHOD"] = HttpRegistry::GetMethodName(m_method);
 
     /**
      * TODO security breach?? only allow headers from a predefined list?

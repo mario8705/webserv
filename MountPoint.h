@@ -50,6 +50,9 @@ public:
 
     void PopulateCgiParams(Request *request, std::map<std::string, std::string> &paramsOut);
 
+    void SetMaxBodySize(size_t maxBodySize);
+    size_t GetMaxBodySize() const;
+
 private:
     std::string LocateFile(const URL &url) const;
 
@@ -65,6 +68,7 @@ private:
     std::map<int, std::string> m_errorDocuments;
     std::string m_path;
     std::string m_root;
+    size_t m_maxBodySize;
     std::vector<MountPoint *> m_nestedMounts;
     std::map<std::string, std::string> m_cgiParams;
 };

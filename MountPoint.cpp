@@ -23,6 +23,7 @@ MountPoint::MountPoint(VirtualHost *virtualHost, RouteMatch routeMatch, const st
     : m_virtualHost(virtualHost), m_routeMatch(routeMatch), m_path(path)
 {
     m_allowedMethods = 0xFF; /* Allow all methods by default */
+    m_maxBodySize = std::numeric_limits<size_t>::max();
 }
 
 MountPoint::~MountPoint()
@@ -75,7 +76,7 @@ bool MountPoint::HandleRequest(Request *request, Response *response)
     if ((bestCandidate = GetBestCandidateRoute(request->GetRawPath())) != NULL)
         return bestCandidate->HandleRequest(request, response);
 
-    if (request->GetContentLength() > 8388608)
+    if (request->GetContentLength() > GetMaxBodySize())
     {
         throw HttpException(HttpStatusCode::RequestEntityTooLarge);
     }
@@ -287,4 +288,21 @@ bool MountPoint::TryFile(const std::string &realPath, const URL &u, Request *req
 void MountPoint::SetErrorPage(int nCode, const std::string &path)
 {
     m_errorDocuments[nCode] = path;
+}
+
+void MountPoint::SetMaxBodySize(size_t maxBodySize)
+{
+    m_maxBodySize = maxBodySize;
+}
+
+size_t MountPoint::GetMaxBodySize() const
+{
+    size_t rootMaxBodySize;
+
+    if (m_virtualHost->GetRootMountPoint() == this)
+        return m_maxBodySize;
+    rootMaxBodySize = m_virtualHost->GetRootMountPoint()->GetMaxBodySize();
+    if (m_maxBodySize < rootMaxBodySize)
+        return m_maxBodySize;
+    return rootMaxBodySize;
 }
