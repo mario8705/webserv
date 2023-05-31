@@ -169,6 +169,8 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
     PropertyIterator propsIterator = rootBlock->FindAllProps();
     ConfigProperty *prop;
 
+
+
     while ((prop = blocksIterator.Next()) != NULL) {
         if (prop->GetName() == "types")
             ParseMimeDatabase(prop);
@@ -195,6 +197,7 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
         {
             std::cerr << "Unknown property " << prop->GetName() << std::endl;
         }
+
     }
 }
 
@@ -305,6 +308,8 @@ void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
             std::cerr << "Unknown block " << prop->GetName() << std::endl;
         }
     }
+    if (!hasListenDirective && !hasServerNameDirective)
+        throw std::runtime_error("Empty server block configuration");
 }
 
 const std::map<std::string, std::string> &Webserv::GetRootCgiParams() const
