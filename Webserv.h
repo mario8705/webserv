@@ -57,13 +57,10 @@ private:
     ServerHost *GetServerHostByAddr(const NetworkAddress4 &addr) const;
 
     void ParseConfig(ConfigProperty *rootBlock);
-    void ParseHttpBlock(ConfigProperty *httpBlock);
-    void ParseTypesBlock(ConfigProperty *typesBlock);
 
+    void ParseMimeDatabase(ConfigProperty *typesBlock);
     void ParseServerBlock(ConfigProperty *serverBlock);
-    void ParseListenProperty(ConfigProperty *listenProp);
-
-    void ParseMimeType(ConfigProperty *mime);
+    void ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *virtualHost);
 };
 
 

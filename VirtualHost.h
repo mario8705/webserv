@@ -34,6 +34,11 @@ public:
         return m_rootMountPoint;
     }
 
+    void AddServerName(const std::string &serverName)
+    {
+        m_serverNames.push_back(serverName);
+    }
+
     const tServerNameList &GetServerNames() const;
 
     tServerNameList m_serverNames;

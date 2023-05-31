@@ -163,217 +163,160 @@ bool Webserv::LoadConfig(const std::string &path)
     return true;
 }
 
-#include "Config/PropertyConsumer.h"
-
 void Webserv::ParseConfig(ConfigProperty *rootBlock)
 {
-    PropertyConsumer rootConsumer(rootBlock);
+    PropertyIterator blocksIterator = rootBlock->FindAllBlocks();
+    PropertyIterator propsIterator = rootBlock->FindAllProps();
+    ConfigProperty *prop;
 
-    rootConsumer.AcceptBlocks("http", &Webserv::ParseHttpBlock, this);
+    while ((prop = blocksIterator.Next()) != NULL) {
+        if (prop->GetName() == "types")
+            ParseMimeDatabase(prop);
+        else if (prop->GetName() == "server")
+            ParseServerBlock(prop);
+        else
+            std::cerr << "Unknown property block " << prop->GetName() << std::endl;
+    }
+
+    while ((prop = propsIterator.Next()) != NULL)
+    {
+        if (prop->GetName() == "default_type")
+        {
+            if (prop->getParams().size() < 2)
+            {
+                std::cerr << "Warning: default_type required at least 1 parameter" << std::endl;
+            }
+            else
+            {
+                m_mimeDatabase->SetDefaultType(prop->getParams()[1]);
+            }
+        }
+        else
+        {
+            std::cerr << "Unknown property " << prop->GetName() << std::endl;
+        }
+    }
 }
 
-void Webserv::ParseHttpBlock(ConfigProperty *httpBlock)
+void Webserv::ParseMimeDatabase(ConfigProperty *typesBlock)
 {
-    PropertyConsumer httpConsumer(httpBlock);
+    PropertyIterator it = typesBlock->FindAllProps();
+    ConfigProperty *typeProp;
+    size_t i;
 
-    httpConsumer.AcceptBlocks("types", &Webserv::ParseTypesBlock, this);
-    httpConsumer.AcceptBlocks("server", &Webserv::ParseServerBlock, this);
-
-    PropertyIterator it = httpBlock->FindAllProps("cgi_param");
-    ConfigProperty *param;
-
-    while ((param = it.Next()))
+    while ((typeProp = it.Next()) != NULL)
     {
-        if (param->GetParamsCount() != 3)
-        {
-            /* TODO warning ? */
-            continue ;
-        }
-        m_rootCgiParams[param->getParams()[1]] = param->getParams()[2];
-    }
-}
-
-struct mime_validator
-{
-    bool operator()(ConfigProperty *property) const
-    {
-        if (property->getParams().size() >= 2)
-            return true;
-        std::cerr << "Error: Invalid mime type, (expected <mime> <extensions...>" << std::endl;
-        return false;
-    }
-};
-
-void Webserv::ParseTypesBlock(ConfigProperty *typesBlock)
-{
-    PropertyConsumer typesConsumer(typesBlock);
-
-    typesConsumer.AcceptProperties("", &Webserv::ParseMimeType, this, mime_validator());
-}
-
-#include "Regex/Pattern.h"
-
-struct listen_validator
-{
-    /*Todo a faire valider par Alavaud.*/
-    bool operator()(ConfigProperty *prop) const
-    {
-        const std::string &addr = prop->getParams()[1];
-        if (prop->getParams().size() < 2 || !isdigit(prop->getParams()[1][0]))
-        {
-            std::cerr << "Fatal error : invalid port" << std::endl;
-            return false;
-        }
-        if (std::atoi(addr.c_str()) >= 65536)
-        {
-            std::cerr << "The port should be beetween 0 and 65535" << std::endl;
-            return false;
-        }
-        if (Pattern::Matches("^[0-9]+$", addr) ||
-            Pattern::Matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$", addr) ||
-            Pattern::Matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+:[0-9]+$", addr)
-            )
-        {
-            return true;
-        }
-        std::cerr << "Invalid format for listen, expecting [ip][:port]" << std::endl;
-        return false;
-    }
-};
-
-struct root_validator
-{
-    bool operator()(ConfigProperty *) const
-    {
-        return true;
-    }
-};
-
-class ServerLocationBlockConsumer : public PropertyConsumer
-{
-public:
-    ServerLocationBlockConsumer(ConfigProperty *locationBlock, VirtualHost *virtualHost, MountPoint *parentRoute)
-        : PropertyConsumer(locationBlock), m_virtualHost(virtualHost), m_parentRoute(parentRoute)
-    {
-        m_mountPoint = NULL;
-    }
-
-    void ConsumeAll()
-    {
-        const std::vector<std::string> &params = m_property->getParams();
-        RouteMatch routeMatch;
-        int pathIndex;
+        const std::vector<std::string> &params = typeProp->getParams();
 
         if (params.size() < 2)
         {
-            std::cerr << "Not enough parameters in location block" << std::endl;
-            return ;
+            throw std::runtime_error("MIME type requires at least 2 params");
         }
-        else if (params.size() > 4)
+        for (i = 1; i < params.size(); ++i)
         {
-            std::cerr << "Too many parameters in location block" << std::endl;
-            return ;
-        }
-
-        routeMatch = kRouteMatch_StartsWith;
-        pathIndex = 1;
-        if (params.size() == 3)
-        {
-            if ("~" == params[1])
-                routeMatch = kRouteMatch_Regex;
-            else if ("=" == params[1])
-                routeMatch = kRouteMatch_Exact;
-            else
+            if (!m_mimeDatabase->RegisterType(params[i], params[0]))
             {
-                std::cerr << "Unknown modifier for location block : " << params[1] << std::endl;
+                std::cerr << "Warning: Duplicate MIME type for ext " << params[i] << " and type " << params[0] << std::endl;
             }
-            ++pathIndex;
         }
-        m_mountPoint = new MountPoint(m_virtualHost, routeMatch, params[pathIndex]);
-
-        AcceptProperties("root", &ServerLocationBlockConsumer::ParseRootProperty, this, root_validator());
-
-        m_parentRoute->AddNestedMount(m_mountPoint);
     }
-
-private:
-    VirtualHost *m_virtualHost;
-    MountPoint *m_mountPoint;
-    MountPoint *m_parentRoute;
-
-    void ParseRootProperty(ConfigProperty *rootProp)
-    {
-        m_mountPoint->SetRoot(rootProp->getParams()[1]);
-    }
-};
-
-class ServerBlockConsumer : public PropertyConsumer
-{
-public:
-    ServerBlockConsumer(ConfigProperty *serverBlock, VirtualHost *virtualHost)
-        : PropertyConsumer(serverBlock), m_virtualHost(virtualHost)
-    {
-    }
-
-    void ConsumeAll()
-    {
-        AcceptProperties("listen", &ServerBlockConsumer::ParseListenProperty,
-                         this, listen_validator());
-        AcceptProperties("root", &ServerBlockConsumer::ParseRootProperty,
-                     this, root_validator());
-        AcceptBlocks("location", &ServerBlockConsumer::ParseLocationBlock,
-                     this);
-    }
-
-private:
-    void ParseListenProperty(ConfigProperty *configProperty)
-    {
-        /* TODO Alavaud must check is this is ok */
-        int port = std::atoi(configProperty->getParams()[1].c_str());
-        m_virtualHost->AddListenAddress(NetworkAddress4(0, port));
-    }
-
-    void ParseRootProperty(ConfigProperty *configProperty)
-    {
-        m_virtualHost->GetRootMountPoint()->SetRoot(configProperty->getParams()[1]);
-    }
-
-    void ParseLocationBlock(ConfigProperty *locationBlock)
-    {
-        ServerLocationBlockConsumer locationConsumer(locationBlock, m_virtualHost, m_virtualHost->GetRootMountPoint());
-
-        locationConsumer.ConsumeAll();
-    }
-
-    VirtualHost *m_virtualHost;
-};
+}
 
 void Webserv::ParseServerBlock(ConfigProperty *serverBlock)
 {
+    PropertyIterator propsIterator = serverBlock->FindAllProps();
+    PropertyIterator blocksIterator = serverBlock->FindAllBlocks();
+    ConfigProperty *prop;
+    size_t i;
+
+    bool hasListenDirective = false;
+    bool hasServerNameDirective = false;
+
     VirtualHost *virtualHost = new VirtualHost;
-    ServerBlockConsumer serverBlockConsumer(serverBlock, virtualHost);
-
-    serverBlockConsumer.ConsumeAll();
     m_virtualHosts.push_back(virtualHost);
-}
 
-void Webserv::ParseListenProperty(ConfigProperty *listenProp)
-{
-}
-
-void Webserv::ParseMimeType(ConfigProperty *mime)
-{
-    size_t j;
-    const std::vector<std::string> &params = mime->getParams();
-
-    for (j = 1; j < params.size(); ++j)
+    while ((prop = propsIterator.Next()) != NULL)
     {
-        if (!m_mimeDatabase->RegisterType(params[j], params[0]))
-            std::cerr << "Duplicate mime type entry for " << params[j] << std::endl;
+        /* TODO move this in MountPoint (location block) */
+        if (prop->GetName() == "index")
+        {
+            if (prop->getParams().size() < 2)
+            {
+                std::cerr << "index property requires at least 1 parameters" << std::endl;
+            }
+            else
+            {
+
+            }
+        }
+        else if (prop->GetName() == "listen")
+        {
+            if (prop->getParams().size() < 2)
+            {
+                std::cerr << "Warning: listen property requires at least 1 parameter" << std::endl;
+            }
+            else
+            {
+                std::string port = prop->getParams()[1];
+                int portNum;
+
+                for (i = 0; i < port.size(); ++i)
+                {
+                    if (!std::isdigit(port[i]) || i > 5)
+                    {
+                        throw std::runtime_error("Error in listen directive: Port format is invalid");
+                    }
+                }
+                portNum = std::atoi(port.c_str());
+                if (portNum > 65535)
+                {
+                    throw std::runtime_error("Error in listen directive: Port format must be in range [0-65535]");
+                }
+                virtualHost->AddListenAddress(NetworkAddress4((uint16_t)portNum));
+                hasListenDirective = true;
+            }
+        }
+        else if (prop->GetName() == "server_name")
+        {
+            const std::vector<std::string> &params = prop->getParams();
+            if (params.size() < 2)
+            {
+                throw std::runtime_error("server_name directive requires at least 1 parameter");
+            }
+            else
+            {
+                for (i = 1; i < params.size(); ++i)
+                {
+                    virtualHost->AddServerName(params[i]);
+                }
+                hasServerNameDirective = true;
+            }
+        }
+        else
+        {
+            std::cerr << "Warning: Unknown property in server block " << prop->GetName() << std::endl;
+        }
+    }
+
+    while ((prop = blocksIterator.Next()) != NULL)
+    {
+        if (prop->GetName() == "location")
+        {
+            ParseLocationBlock(prop, virtualHost);
+        }
+        else
+        {
+            std::cerr << "Unknown block " << prop->GetName() << std::endl;
+        }
     }
 }
 
 const std::map<std::string, std::string> &Webserv::GetRootCgiParams() const
 {
     return m_rootCgiParams;
+}
+
+void Webserv::ParseLocationBlock(ConfigProperty *locationBlock, VirtualHost *virtualHost)
+{
+    std::cout << "Location block ! " << std::endl;
 }
