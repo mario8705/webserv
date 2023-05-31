@@ -63,7 +63,6 @@ private:
     std::string m_rawPath;
     IAsyncRequestHandler *m_asyncHandler;
     bool m_pendingFinalizeResponse;
-    size_t m_bodyLength;
 
     bool m_chunked;
     int m_responseStatus;

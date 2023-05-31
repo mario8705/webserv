@@ -1,7 +1,6 @@
 #include "ConfigProperty.h"
 #include <stack>
 #include "Token.h"
-#include <iostream>
 
 ConfigProperty::ConfigProperty()
     : m_isBlock(true)
@@ -38,13 +37,13 @@ const std::vector<ConfigProperty *> &ConfigProperty::getBody() const
     return (_body);
 }
 
-ConfigProperty *ConfigProperty::push_config(ConfigProperty *rootProp, const std::vector<Token *> &tokens)
+ConfigProperty *ConfigProperty::push_config(const std::vector<Token *> &tokens)
 {
     std::vector<std::string> tmp;
     std::stack<ConfigProperty *> stck;
     ConfigProperty *property;
 
-    stck.push(rootProp);
+    stck.push(new ConfigProperty);
     for (size_t i = 0; i < tokens.size(); i++)
     {
         if (tokens[i]->getType() == kTokenType_Ident ||
@@ -63,7 +62,7 @@ ConfigProperty *ConfigProperty::push_config(ConfigProperty *rootProp, const std:
         {
             if (stck.size() < 2)
             {
-                throw std::runtime_error("Bracket unclosed");
+                /* TODO error */
             }
             stck.pop();
         }
@@ -73,15 +72,10 @@ ConfigProperty *ConfigProperty::push_config(ConfigProperty *rootProp, const std:
             {
                 stck.top()->add_body(new ConfigProperty(tmp, false));
                 tmp.clear();
-            } else
-                throw std::runtime_error("Empty config block");
+            }
         }
     }
-    if (stck.size() != 1)
-    {
-        throw std::runtime_error("Unclosed brackets");
-    }
-    return rootProp;
+    return stck.top();
 }
 
 const std::string &ConfigProperty::GetName() const

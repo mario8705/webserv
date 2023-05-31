@@ -53,9 +53,9 @@ void HttpClientHandler::Disconnect(bool flush) {
     }
 }
 
-bool HttpClientHandler::HandleRequest(Request *request, Response *response)
+void HttpClientHandler::HandleRequest(Request *request, Response *response)
 {
-    return m_host->HandleRequest(request, response);
+    m_host->HandleRequest(request, response);
 }
 
 BufferEvent *HttpClientHandler::GetBufferEvent() const
@@ -71,9 +71,5 @@ HttpProtocolCodec *HttpClientHandler::GetProtocolCodec() const
 IEventLoop *HttpClientHandler::GetEventLoop() const
 {
     return m_host->GetEventLoop();
-}
-
-bool HttpClientHandler::IsDisconnecting() const {
-    return m_disconnecting;
 }
 

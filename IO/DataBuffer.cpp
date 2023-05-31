@@ -101,7 +101,7 @@ int DataBuffer::Read(int fd)
     }
     else
     {
-        perror("read");
+        /* TODO perror("read"); */
     }
     return static_cast<int>(n);
 }
@@ -193,7 +193,6 @@ int DataBuffer::Write(int fd)
         sz = chain->m_offset - chain->m_misalign;
         n = write(fd, chain->m_buffer + chain->m_misalign, sz);
         if (n <= 0) {
-            perror("write");
             if (n == 0 && total > 0)
                 return total;
             return n;

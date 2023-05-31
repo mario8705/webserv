@@ -3,42 +3,10 @@
 //
 
 #include "DirectoryListing.h"
-#include <sys/stat.h>
 
-DirectoryListing::DirectoryListing(DIR *dirp, const std::string &urlPath, const std::string &realPath)
-    : m_dirp(dirp), m_urlPath(urlPath), m_realPath(realPath)
+DirectoryListing::DirectoryListing(DIR *dirp, const std::string &baseUrl)
+    : m_dirp(dirp), m_baseUrl(baseUrl)
 {
-}
-
-static void WriteFileSize(std::ostream &out, const std::string &path)
-{
-    struct stat st;
-    off_t size;
-    std::string suffix;
-
-    if (stat(path.c_str(), &st) < 0)
-    {
-        out << "-";
-        return ;
-    }
-    size = st.st_size;
-    suffix = "b";
-    if (size > 1024)
-    {
-        size /= 1024;
-        suffix = "K";
-    }
-    if (size > 1024)
-    {
-        size /= 1024;
-        suffix = "M";
-    }
-    if (size > 1024)
-    {
-        suffix = "G";
-        size /= 1024;
-    }
-    out << size << suffix;
 }
 
 void DirectoryListing::Write(std::ostream &out)
@@ -46,7 +14,7 @@ void DirectoryListing::Write(std::ostream &out)
     struct dirent *dent;
     std::string path;
 
-    path = m_realPath;
+    path = m_baseUrl;
     if (!path.empty() && path[path.size() - 1] != '/')
         path.append("/");
 
@@ -54,7 +22,7 @@ void DirectoryListing::Write(std::ostream &out)
            "<html lang=\"en\">\n"
            "<head>\n"
            "    <meta charset=\"UTF-8\">\n"
-           "    <title>Directory listing of " << m_urlPath << "</title>\n"
+           "    <title>Directory listing of " << m_baseUrl << "</title>\n"
            "    <style>\n"
            "        body {\n"
            "            font-family: system-ui, -apple-system, \"Verdana\", sans-serif;\n"
@@ -111,7 +79,7 @@ void DirectoryListing::Write(std::ostream &out)
            "    </style>\n"
            "</head>\n"
            "<body>\n"
-           "    <h1>Directory listing of " << m_urlPath << "</h1>\n"
+           "    <h1>Directory listing of " << m_baseUrl << "</h1>\n"
            "    <table>\n"
            "        <thead>\n"
            "        <tr>\n"
@@ -126,11 +94,12 @@ void DirectoryListing::Write(std::ostream &out)
             continue;
         }
 
-        std::string href = m_urlPath + dent->d_name;
+        std::string href = path + dent->d_name;
 
         if (!std::strcmp(dent->d_name, ".."))
         {
             if (path != "/") {
+                printf("Path: %s\n", path.c_str());
                 href = path.substr(0, path.size() - 1);
                 size_t l = href.find_last_of('/');
                 if (std::string::npos == l) {
@@ -146,9 +115,7 @@ void DirectoryListing::Write(std::ostream &out)
                "                <td>\n"
                "                    <a href=\"" << href << "\">"
                << dent->d_name << "</a></td>\n"
-                                  "                <td>";
-        WriteFileSize(out, "/etc/resolve.conf");
-        out << "</td>\n"
+               "                <td>3M</td>\n"
                "            </tr>\n";
     }
 

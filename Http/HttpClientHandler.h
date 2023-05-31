@@ -23,11 +23,9 @@ public:
     void HandleWrite(DataBuffer *buffer);
     void HandleEvent(EventType type);
 
-    bool HandleRequest(Request *request, Response *response);
+    void HandleRequest(Request *request, Response *response);
 
     void Disconnect(bool flush);
-
-    bool IsDisconnecting() const;
 
     BufferEvent *GetBufferEvent() const;
     HttpProtocolCodec *GetProtocolCodec() const;

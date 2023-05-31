@@ -105,5 +105,6 @@ BufferEvent::Connect(IEventLoop *eventLoop, IBufferEventHandler *handler, sockad
         close(fd);
         return NULL;
     }
+
     return new BufferEvent(eventLoop, handler, fd);
 }

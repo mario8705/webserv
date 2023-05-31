@@ -4,6 +4,7 @@
 
 #include "ListenerEvent.h"
 #include <unistd.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include "ConnectionHandler.h"
 #include "../IO/EventLoop.h"
@@ -39,6 +40,18 @@ void ListenerEvent::NotifyWrite()
 {
 }
 
+int fd_set_non_blocking(int fd)
+{
+    int fl;
+
+    fl = fcntl(fd, F_GETFL, 0);
+    if (fl < 0)
+        return -1;
+    if (fcntl(fd, F_SETFL, fl | O_NONBLOCK) < 0)
+        return -1;
+    return 0;
+}
+
 ListenerEvent *ListenerEvent::CreateAndBind(IEventLoop *eventLoop, IConnectionHandler *handler,
                                             struct sockaddr *addr, socklen_t addrlen, int backlog)
 {
@@ -50,6 +63,10 @@ ListenerEvent *ListenerEvent::CreateAndBind(IEventLoop *eventLoop, IConnectionHa
         return NULL;
     en = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &en, sizeof(en)) < 0)
+    {
+        goto fail;
+    }
+    if (fd_set_non_blocking(fd) < 0)
     {
         goto fail;
     }

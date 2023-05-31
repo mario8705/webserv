@@ -83,6 +83,8 @@ public:
     {
         m_bev = new BufferEvent(eventLoop, this, outfd);
         m_bev->Enable(kEvent_Write);
+
+        printf("Content Length %zu\n", contentLength);
     }
 
     ~BufferEventToPipe()
@@ -101,6 +103,8 @@ public:
             m_bytesLeft = 0;
         else
             m_bytesLeft -= in->GetLength();
+
+        printf("Bytes left %zu\n", m_bytesLeft);
         m_bev->GetOutputBuffer()->AddBuffer(in);
     }
 
@@ -110,7 +114,6 @@ public:
 
     void HandleEvent(EventType)
     {
-        /* TODO handle event ? */
     }
 
     void HandleWrite(DataBuffer *out)

@@ -35,7 +35,7 @@ public:
 
     void ProcessDeferredActions();
 
-    bool HandleRequest(Request *request, Response *response);
+    void HandleRequest(Request *request, Response *response);
 
     IEventLoop *GetEventLoop() const;
 

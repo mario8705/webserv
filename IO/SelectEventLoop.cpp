@@ -81,7 +81,7 @@ bool SelectEventLoop::LoopOnce()
         if (fd > nfds)
             nfds = fd;
         if (evt->IsReadable())
-            FD_SET(fd, &rdset);
+             FD_SET(fd, &rdset);
         if (evt->IsWritable())
             FD_SET(fd, &wrset);
     }
@@ -124,18 +124,17 @@ void SelectEventLoop::RaiseReadEvent(IOEvent *evt)
 void SelectEventLoop::ProcessPendingEvents()
 {
     IOEvent *evt;
-    size_t i;
 
-    for (i = 0; i < m_pendingReads.size(); ++i)
+    while (!m_pendingReads.empty())
     {
-        evt = m_pendingReads[i];
+        evt = m_pendingReads.back();
+        m_pendingReads.pop_back();
         evt->NotifyRead();
     }
-    for (i = 0; i < m_pendingWrites.size(); ++i)
+    while (!m_pendingWrites.empty())
     {
-        evt = m_pendingWrites[i];
+        evt = m_pendingWrites.back();
+        m_pendingWrites.pop_back();
         evt->NotifyWrite();
     }
-    m_pendingReads.clear();
-    m_pendingWrites.clear();
 }
