@@ -169,17 +169,22 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
     PropertyIterator propsIterator = rootBlock->FindAllProps();
     ConfigProperty *prop;
 
-
-
+    bool isFileRunnable = false;
     while ((prop = blocksIterator.Next()) != NULL) {
         if (prop->GetName() == "types")
+        {
             ParseMimeDatabase(prop);
+        }
         else if (prop->GetName() == "server")
+        {
             ParseServerBlock(prop);
+            isFileRunnable = true;
+        }
         else
             std::cerr << "Unknown property block " << prop->GetName() << std::endl;
     }
 
+    int nbValidParams = 0;
     while ((prop = propsIterator.Next()) != NULL)
     {
         if (prop->GetName() == "default_type")
@@ -191,6 +196,7 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
             else
             {
                 m_mimeDatabase->SetDefaultType(prop->getParams()[1]);
+                ++nbValidParams;
             }
         }
         else
@@ -199,6 +205,9 @@ void Webserv::ParseConfig(ConfigProperty *rootBlock)
         }
 
     }
+
+    if (!isFileRunnable || nbValidParams == 0)
+        throw std::runtime_error("Empty config file");
 }
 
 void Webserv::ParseMimeDatabase(ConfigProperty *typesBlock)
