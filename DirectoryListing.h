@@ -5,6 +5,9 @@
 #ifndef WEBSERV_DIRECTORYLISTING_H
 #define WEBSERV_DIRECTORYLISTING_H
 #include <string>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 #include <ostream>
 #include <dirent.h>
 
