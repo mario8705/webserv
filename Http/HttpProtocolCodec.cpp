@@ -166,7 +166,7 @@ void HttpProtocolCodec::ParseHeader(const std::string &line)
     {
         key = line.substr(0, sep);
         value = line.substr(sep + 1);
-        utils::to_lower(value);
+        utils::to_lower(key);
     }
     else
     {

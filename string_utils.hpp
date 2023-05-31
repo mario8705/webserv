@@ -94,15 +94,12 @@ namespace utils
         return s;
     }
 
-    template <typename charT>
-    inline std::basic_string<charT> &to_lower(std::basic_string<charT> &s)
+    inline std::string &to_lower(std::string &s)
     {
-        typename std::basic_string<charT>::iterator it;
+        size_t i;
 
-        for (it = s.begin(); it != s.end(); ++it)
-        {
-            *it = std::tolower(*it);
-        }
+        for (i = 0; i < s.size(); ++i)
+            s[i] = std::tolower(s[i]);
         return s;
     }
 

@@ -37,6 +37,7 @@ Webserv::Webserv()
 Webserv::~Webserv()
 {
     tVirtualHostList::const_iterator it;
+    size_t i;
 
     s_instance = NULL;
     for (it = m_virtualHosts.begin(); it != m_virtualHosts.end(); ++it)
@@ -44,7 +45,8 @@ Webserv::~Webserv()
         delete *it;
     }
 
-    /* TODO free all ServerHost */
+    for (i = 0; i < m_hosts.size(); ++i)
+        delete m_hosts[i];
 
     delete m_eventLoop;
     delete m_mimeDatabase;
