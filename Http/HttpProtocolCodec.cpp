@@ -41,6 +41,7 @@ void HttpProtocolCodec::ProcessDataInput()
     std::string line;
     bool dispatchRequest;
 
+    printf("Async Handler %p:%p\n", this, m_asyncHandler);
     if (!m_asyncHandler) {
         dispatchRequest = false;
         while (m_inputBuffer->Readln(line)) {
@@ -54,17 +55,7 @@ void HttpProtocolCodec::ProcessDataInput()
                     }
                 } else {
                     if (line.empty()) {
-                        if (m_method == kHttpMethod_Get)
-                        {
-                            if (m_headers.find("Content-Length") != m_headers.end())
-                                throw HttpException(HttpStatusCode::BadRequest);
-                        } else if (m_method == kHttpMethod_Post ||
-                            m_method == kHttpMethod_Patch ||
-                            m_method == kHttpMethod_Put) {
-                            if (m_headers.find("Content-Length") == m_headers.end()) {
-                                throw HttpException(HttpStatusCode::LengthRequired);
-                            }
-
+                        if (m_headers.find("Content-Length") != m_headers.end()) {
                             std::string contentLength = m_headers["Content-Length"];
                             size_t i;
 
@@ -73,12 +64,19 @@ void HttpProtocolCodec::ProcessDataInput()
                                     throw HttpException(HttpStatusCode::BadRequest);
                                 }
                             }
+
                             m_bufferEvent->Enable(kEvent_Read | kEvent_Write);
                         }
                         else
                         {
                             /* Disable reading while processing the request */
                             m_bufferEvent->Enable(kEvent_Write);
+
+                            if (m_method == kHttpMethod_Post ||
+                                m_method == kHttpMethod_Patch ||
+                                m_method == kHttpMethod_Put) {
+                                throw HttpException(HttpStatusCode::LengthRequired);
+                            }
                         }
                         dispatchRequest = true;
                     } else
@@ -153,6 +151,7 @@ void HttpProtocolCodec::ParseRequestHeader(const std::string &line)
     {
         rawPath = line.substr(methodSep + 1);
     }
+    printf("[%s] %s\n", method.c_str(), rawPath.c_str());
     SetRequestHeader(method, rawPath, httpVersion);
 }
 
@@ -256,6 +255,7 @@ void HttpProtocolCodec::DispatchRequest()
     m_responseMessage = response.GetStatusMessage();
 
     m_asyncHandler = response.GetAsyncHandler();
+    printf("Async Handler oàoà %p:%p\n", this, m_asyncHandler);
     m_chunked = response.IsChunked();
 
     body = response.GetBodyBuffer();
@@ -315,6 +315,8 @@ void HttpProtocolCodec::FinalizeResponse()
 
     /* Re-enable reads to receive the next request */
     m_bufferEvent->Enable(kEvent_Read);
+
+    printf("Finalized\n");
 }
 
 void HttpProtocolCodec::Write(const void *data, size_t n)
