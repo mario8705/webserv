@@ -1,5 +1,8 @@
 <?php
-    session_start();
+    session_name('phpsessid');
+    session_start(array(
+        'session.name' => 'phpsessid',
+    ));
 
     if (!isset($_SESSION['d'])) {
         $_SESSION['d'] = 0;
@@ -7,8 +10,4 @@
 
     $_SESSION['d'] = $_SESSION['d'] + 1;
 
-    echo 'Vous etes le ' . $_SESSION['d'] . ' visiteur !';
-
-    var_dump($_SESSION);
-?>
-o
+    echo 'Vous avez visite le site  ' . $_SESSION['d'] . ' fois !';
